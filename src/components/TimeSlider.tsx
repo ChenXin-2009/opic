@@ -41,7 +41,7 @@ export default function TimeSlider({
 
   const centerY = height / 2;
   const arrowSize = 8;
-  const arrowWidth = 2;
+  const arrowWidth = 1.5;
   const lineStartX = trackPadding;
   const lineEndX = width - trackPadding - arrowSize - 5;
 
@@ -123,6 +123,7 @@ export default function TimeSlider({
           y2={centerY}
           stroke="rgba(255, 255, 255, 0.8)"
           strokeWidth={cfg.trackMaxWidth}
+          strokeLinecap="butt"
         />
         
         {/* 坐标轴箭头 - 向右 */}
@@ -135,26 +136,27 @@ export default function TimeSlider({
             y2={centerY}
             stroke="rgba(255, 255, 255, 0.8)"
             strokeWidth={cfg.trackMaxWidth}
+            strokeLinecap="butt"
           />
-          {/* 箭头上半部分 */}
+          {/* 箭头上半部分 - 90度夹角 */}
           <line
             x1={width - trackPadding}
             y1={centerY}
             x2={width - trackPadding - arrowSize}
-            y2={centerY - arrowSize / 2}
+            y2={centerY - arrowSize}
             stroke="rgba(255, 255, 255, 0.8)"
             strokeWidth={arrowWidth}
-            strokeLinecap="round"
+            strokeLinecap="butt"
           />
-          {/* 箭头下半部分 */}
+          {/* 箭头下半部分 - 90度夹角 */}
           <line
             x1={width - trackPadding}
             y1={centerY}
             x2={width - trackPadding - arrowSize}
-            y2={centerY + arrowSize / 2}
+            y2={centerY + arrowSize}
             stroke="rgba(255, 255, 255, 0.8)"
             strokeWidth={arrowWidth}
-            strokeLinecap="round"
+            strokeLinecap="butt"
           />
         </g>
       </svg>
