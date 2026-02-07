@@ -25,17 +25,17 @@
   }
 }
 
-/* 覆盖 Tailwind 的等宽字体类，让顶栏时间等使用思源宋体 CN + 等宽权重 */
+/* 覆盖 Tailwind 的等宽字体类，让顶栏时间等使用系统字体 + 等宽权重 */
 .font-mono {
-  font-family: 'SourceHanSerifCN', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Source Han Serif CN', 'SimSun', serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: var(--font-weight-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  /* 全站默认使用思源宋体可变字体 */
-  font-family: 'SourceHanSerifCN', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* 全站默认使用系统字体 */
+  font-family: 'Source Han Serif CN', 'SimSun', serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: var(--font-weight-body);
   /* 允许触摸操作但防止页面滚动 */
   touch-action: manipulation;
@@ -80,14 +80,7 @@ input[type="date"].date-input-white::-webkit-clear-button {
   filter: invert(1);
 }
 
-/* 思源宋体 CN 可变字体（支持粗细调节） */
-@font-face {
-  font-family: 'SourceHanSerifCN';
-  src: url('/fonts/SourceHanSerifCN-VF.otf.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
+
 
 /* 淡入动画 */
 @keyframes fadeIn {

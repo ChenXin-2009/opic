@@ -133,8 +133,8 @@ export default function ScaleRuler({ camera, container, controlsTarget }: ScaleR
       className="absolute top-4 right-4 z-20 pointer-events-none"
       style={{
         color: '#ffffff',
-        // 与全局保持一致，使用思源宋体 CN，可变字重用 body 字重
-        fontFamily: '"SourceHanSerifCN", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        // 与全局保持一致，使用系统字体
+        fontFamily: '"Source Han Serif CN", "SimSun", serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         fontSize: '14px',
         textShadow: '0 0 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6)',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

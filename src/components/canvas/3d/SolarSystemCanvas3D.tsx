@@ -71,8 +71,8 @@ const LABEL_CONFIG = {
   // 🔧 字体大小
   fontSize: '16px',
   
-  // 🔧 字体族（全站统一使用思源宋体 CN 可变字体）
-  fontFamily: '"SourceHanSerifCN", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  // 🔧 字体族（全站统一使用系统字体）
+  fontFamily: '"Source Han Serif CN", "SimSun", serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   
   // 🔧 字体粗细（行星/太阳标签字重，可在 globals.css 中调整）
   fontWeight: 'var(--font-weight-label)',

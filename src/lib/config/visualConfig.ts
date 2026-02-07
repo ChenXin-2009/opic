@@ -1086,7 +1086,7 @@ export const DISTANCE_DISPLAY_CONFIG = {
   textColor: '#ffffff',
   
   /** 字体族 */
-  fontFamily: '"SourceHanSerifCN", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  fontFamily: '"Source Han Serif CN", "SimSun", serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   
   /** 文字阴影 */
   textShadow: '0 0 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6)',

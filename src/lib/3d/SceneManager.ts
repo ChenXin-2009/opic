@@ -19,7 +19,6 @@ import { VIEW_SETTINGS } from '../config/cameraConfig';
 import { NearbyStars } from './NearbyStars';
 import { GalaxyRenderer } from './GalaxyRenderer';
 import { GaiaStars } from './GaiaStars';
-import { BrightStarCatalogue, BSC_CONFIG } from './BrightStarCatalogue';
 import { SCALE_VIEW_CONFIG, NEARBY_STARS_CONFIG, GALAXY_CONFIG } from '../config/galaxyConfig';
 
 // 银河系背景图片路径（圆柱投影/equirectangular）
@@ -42,7 +41,7 @@ const MILKY_WAY_ORIENTATION = {
 };
 
 // 🔧 星空对齐配置（度）
-// 将赤道坐标系的星空（BSC/Gaia/NearbyStars）旋转到与太阳系黄道坐标系对齐
+// 将赤道坐标系的星空（Gaia/NearbyStars）旋转到与太阳系黄道坐标系对齐
 const STARS_ALIGNMENT = {
   rotationX: -163.5,
   rotationY: -114.3,
@@ -61,7 +60,6 @@ export class SceneManager {
   private nearbyStars: NearbyStars | null = null;
   private gaiaStars: GaiaStars | null = null;
   private galaxyRenderer: GalaxyRenderer | null = null;
-  private brightStarCatalogue: BrightStarCatalogue | null = null;
   private skyboxOpacity: number = 1;
   private skyboxTargetOpacity: number = 1;
 
@@ -129,12 +127,6 @@ export class SceneManager {
     this.gaiaStars = new GaiaStars();
     this.scene.add(this.gaiaStars.getGroup());
     
-    // 初始化 Bright Star Catalogue 天球壳
-    if (BSC_CONFIG.enabled) {
-      this.brightStarCatalogue = new BrightStarCatalogue();
-      this.scene.add(this.brightStarCatalogue.getGroup());
-    }
-    
     // 初始化银河系渲染器
     if (GALAXY_CONFIG.enabled) {
       this.galaxyRenderer = new GalaxyRenderer();
@@ -195,7 +187,7 @@ export class SceneManager {
 
   /**
    * 应用星空对齐旋转
-   * 将天空盒、BSC、Gaia、NearbyStars 旋转到与太阳系黄道坐标系对齐
+   * 将天空盒、Gaia、NearbyStars 旋转到与太阳系黄道坐标系对齐
    */
   private applyStarsAlignment(): void {
     const degToRad = Math.PI / 180;
@@ -256,10 +248,7 @@ export class SceneManager {
       this.skybox.quaternion.copy(finalQuat);
     }
     
-    // BSC/Gaia/NearbyStars：只用组合旋转
-    if (this.brightStarCatalogue) {
-      this.brightStarCatalogue.getGroup().quaternion.copy(combinedExtraQuat);
-    }
+    // Gaia/NearbyStars：只用组合旋转
     if (this.gaiaStars) {
       this.gaiaStars.getGroup().quaternion.copy(combinedExtraQuat);
     }
@@ -332,11 +321,6 @@ export class SceneManager {
     // 更新 Gaia 恒星
     if (this.gaiaStars) {
       this.gaiaStars.update(cameraDistance, deltaTime, starBrightness);
-    }
-    
-    // 更新 Bright Star Catalogue 天球壳
-    if (this.brightStarCatalogue) {
-      this.brightStarCatalogue.update(cameraDistance, deltaTime);
     }
     
     // 更新银河系
@@ -444,9 +428,8 @@ export class SceneManager {
       this.camera.near = suggestedNear;
     }
 
-    // far 值：确保足够大，覆盖 BSC 天球壳（500000 AU）和银河系
-    // 使用固定的大值以确保远处物体不被裁剪
-    const minFar = BSC_CONFIG.sphereRadius * 2; // 至少是天球壳半径的2倍
+    // 使用固定的大值（100万AU）确保远处物体不被裁剪
+    const minFar = 1e6;
     const far = Math.max(minFar, Math.min(VIEW_SETTINGS.maxFarPlane || 1e12, distanceToSun * 10));
     this.camera.far = far;
 
@@ -465,11 +448,6 @@ export class SceneManager {
     if (this.gaiaStars) {
       this.gaiaStars.dispose();
       this.gaiaStars = null;
-    }
-    
-    if (this.brightStarCatalogue) {
-      this.brightStarCatalogue.dispose();
-      this.brightStarCatalogue = null;
     }
     
     if (this.galaxyRenderer) {
