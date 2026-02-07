@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useSolarSystemStore } from '@/lib/state';
 
 // ==================== 可调参数配置 ====================
 // ⚙️ 以下参数可在文件顶部调整，影响设置菜单的显示效果
@@ -14,50 +15,50 @@ import React, { useState, useRef, useEffect } from 'react';
 const SETTINGS_CONFIG = {
   // 🔧 按钮位置（相对于屏幕）
   position: {
-    bottom: '2rem', // 距离底部距离（对应 bottom-6 = 1.5rem）
-    right: '2rem',  // 距离右边距离（对应 right-6 = 1.5rem）
+    bottom: '2rem',
+    right: '2rem',
   },
   
   // 🔧 按钮样式
   button: {
-    size: '3rem',    // 按钮大小（对应 w-10 h-10 = 2.5rem = 40px）
-    iconSize: '2rem', // 图标大小（对应 w-5 h-5 = 1.25rem = 20px）
+    size: '3rem',
+    iconSize: '2rem',
   },
   
   // 🔧 菜单样式
   menu: {
-    width: '16rem',    // 菜单宽度（对应 w-64 = 16rem = 256px）
-    maxHeight: '20rem', // 菜单最大高度（对应 max-h-80 = 20rem = 320px）
-    padding: '1rem',    // 菜单内边距（对应 p-4 = 1rem = 16px）
-    gap: '0.75rem',    // 菜单项间距（对应 gap-3 = 0.75rem = 12px）
+    width: '18rem',
+    maxHeight: '28rem',
+    padding: '1rem',
+    gap: '0.75rem',
   },
   
-  // 🔧 切换开关样式（类似 2D/3D 切换）
+  // 🔧 切换开关样式
   toggle: {
     container: {
-      padding: '0.25rem', // 容器内边距（对应 p-1 = 0.25rem = 4px）
+      padding: '0.125rem',
     },
     button: {
-      paddingX: '0.75rem',  // 按钮左右内边距（对应 px-3 = 0.75rem = 12px）
-      paddingY: '0.5rem',    // 按钮上下内边距（对应 py-2 = 0.5rem = 8px）
-      minWidth: '3rem',    // 按钮最小宽度（对应 min-w-[3rem] = 3rem = 48px）
+      paddingX: '0.5rem',
+      paddingY: '0.375rem',
+      minWidth: '2.5rem',
     },
     slider: {
-      positionNormal: '0.25rem',   // 正常模式位置（对应 left-1 = 0.25rem = 4px）
-      positionWide: '3.25rem',       // 超广角模式位置（对应 left-[4.25rem] = 4.25rem = 68px）
-      width: '3rem',             // 滑块宽度（对应 w-[3.75rem] = 3.75rem = 60px）
-      marginTop: '0.25rem',         // 滑块顶部边距（对应 top-1 = 0.25rem = 4px）
-      marginBottom: '0.25rem',      // 滑块底部边距（对应 bottom-1 = 0.25rem = 4px）
+      positionNormal: '0.125rem',
+      positionWide: '2.625rem',
+      width: '2.5rem',
+      marginTop: '0.125rem',
+      marginBottom: '0.125rem',
     },
     animation: {
-      duration: 300, // 动画持续时间（毫秒）
-      easing: 'cubic-bezier(0.4, 0, 0.2, 1)', // 缓动函数
+      duration: 300,
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
     },
   },
 };
 
 interface SettingsMenuProps {
-  cameraController: any; // CameraController 实例
+  cameraController: any;
 }
 
 export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
@@ -65,6 +66,10 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
   const [isWideAngle, setIsWideAngle] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // 从 store 获取状态
+  const lang = useSolarSystemStore((state) => state.lang);
+  const setLang = useSolarSystemStore((state) => state.setLang);
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -92,13 +97,11 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
   const handleWideAngleToggle = (wide: boolean) => {
     setIsWideAngle(wide);
     if (cameraController) {
-      // 正常模式：45度，超广角模式：120度
       const fov = wide ? 120 : 45;
-      cameraController.setFov(fov, true); // 传入 true 表示需要平滑过渡
+      cameraController.setFov(fov, true);
     }
   };
 
-  // 计算滑块位置
   const sliderLeftNormal = SETTINGS_CONFIG.toggle.slider.positionNormal;
   const sliderLeftWide = SETTINGS_CONFIG.toggle.slider.positionWide;
   const sliderWidth = SETTINGS_CONFIG.toggle.slider.width;
@@ -111,37 +114,18 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        onTouchStart={(e) => {
-          // 确保触摸事件被正确处理，不被父元素阻止
-          e.stopPropagation();
-        }}
-        onTouchEnd={(e) => {
-          e.stopPropagation();
-        }}
-        className="fixed bg-black/90 backdrop-blur-md rounded-full shadow-2xl border border-white/20 hover:bg-black/95 active:bg-black/95 transition-all duration-300 flex items-center justify-center touch-manipulation pointer-events-auto"
+        className="fixed bg-black/90 backdrop-blur-md rounded-full shadow-2xl border border-white/20 hover:bg-black/95 transition-all duration-300 flex items-center justify-center"
         style={{
           bottom: SETTINGS_CONFIG.position.bottom,
           right: SETTINGS_CONFIG.position.right,
           width: SETTINGS_CONFIG.button.size,
           height: SETTINGS_CONFIG.button.size,
-          // 确保在移动端可见，使用非常高的z-index
           zIndex: 99999,
-          // 兼容性：同时使用 Webkit 和标准属性
-          WebkitTapHighlightColor: 'transparent',
-          MozTapHighlightColor: 'transparent',
-          tapHighlightColor: 'transparent',
-          // 确保按钮可以接收触摸事件
-          touchAction: 'manipulation',
-          position: 'fixed',
-          // 确保在火狐浏览器中可见
-          display: 'flex',
-          visibility: 'visible',
-          opacity: 1,
-        } as React.CSSProperties}
-        aria-label="设置"
+        }}
+        aria-label={lang === 'zh' ? '设置' : 'Settings'}
       >
         <svg
-          className="w-5 h-5 text-white"
+          className="text-white"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -166,7 +150,7 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
       {isOpen && (
         <div
           ref={menuRef}
-          className="fixed z-50 bg-black/90 backdrop-blur-md rounded-lg shadow-2xl border border-white/20 opacity-0 animate-[fadeIn_0.2s_ease-out_forwards]"
+          className="fixed z-50 bg-black/90 backdrop-blur-md rounded-lg shadow-2xl border border-white/20 opacity-0 animate-[fadeIn_0.2s_ease-out_forwards] overflow-y-auto"
           style={{
             bottom: `calc(${SETTINGS_CONFIG.position.bottom} + ${SETTINGS_CONFIG.button.size} + 0.5rem)`,
             right: SETTINGS_CONFIG.position.right,
@@ -175,40 +159,97 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
             padding: SETTINGS_CONFIG.menu.padding,
           }}
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {/* 菜单标题 */}
-            <div className="text-white text-sm font-semibold mb-1">设置</div>
+            <div className="text-white text-base font-semibold border-b border-white/10 pb-2">
+              {lang === 'zh' ? '设置' : 'Settings'}
+            </div>
 
-            {/* 相机视野切换 */}
+            {/* 语言切换 */}
             <div className="flex items-center justify-between gap-4">
-              <span className="text-white text-sm font-medium flex-shrink-0">相机视野</span>
-              
-              {/* 切换开关 */}
+              <span className="text-white/80 text-sm font-medium flex-shrink-0">
+                {lang === 'zh' ? '语言' : 'Language'}
+              </span>
               <div
-                className="relative bg-white/10 rounded-full"
+                className="relative bg-white/10 rounded-full flex-shrink-0"
                 style={{ padding: SETTINGS_CONFIG.toggle.container.padding }}
               >
                 <div className="flex relative">
-                  {/* 背景滑块 */}
                   <div
                     className="absolute rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all ease-out shadow-lg"
+                    style={{
+                      left: lang === 'zh' ? sliderLeftNormal : sliderLeftWide,
+                      width: sliderWidth,
+                      top: sliderTop,
+                      bottom: sliderBottom,
+                      transition: `left ${SETTINGS_CONFIG.toggle.animation.duration}ms ${SETTINGS_CONFIG.toggle.animation.easing}`,
+                    }}
+                  />
+                  <button
+                    onClick={() => setLang('zh')}
+                    className={`relative z-10 rounded-full text-xs font-semibold transition-all duration-300 ${
+                      lang === 'zh'
+                        ? 'text-white drop-shadow-lg'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                    style={{
+                      paddingLeft: SETTINGS_CONFIG.toggle.button.paddingX,
+                      paddingRight: SETTINGS_CONFIG.toggle.button.paddingX,
+                      paddingTop: SETTINGS_CONFIG.toggle.button.paddingY,
+                      paddingBottom: SETTINGS_CONFIG.toggle.button.paddingY,
+                      minWidth: SETTINGS_CONFIG.toggle.button.minWidth,
+                    }}
+                  >
+                    中文
+                  </button>
+                  <button
+                    onClick={() => setLang('en')}
+                    className={`relative z-10 rounded-full text-xs font-semibold transition-all duration-300 ${
+                      lang === 'en'
+                        ? 'text-white drop-shadow-lg'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                    style={{
+                      paddingLeft: SETTINGS_CONFIG.toggle.button.paddingX,
+                      paddingRight: SETTINGS_CONFIG.toggle.button.paddingX,
+                      paddingTop: SETTINGS_CONFIG.toggle.button.paddingY,
+                      paddingBottom: SETTINGS_CONFIG.toggle.button.paddingY,
+                      minWidth: SETTINGS_CONFIG.toggle.button.minWidth,
+                    }}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 相机视野切换 */}
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-white/80 text-sm font-medium flex-shrink-0">
+                {lang === 'zh' ? '相机视野' : 'Camera FOV'}
+              </span>
+              <div
+                className="relative bg-white/10 rounded-full flex-shrink-0"
+                style={{ padding: SETTINGS_CONFIG.toggle.container.padding }}
+              >
+                <div className="flex relative">
+                  <div
+                    className="absolute rounded-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all ease-out shadow-lg"
                     style={{
                       left: isWideAngle ? sliderLeftWide : sliderLeftNormal,
                       width: sliderWidth,
                       top: sliderTop,
                       bottom: sliderBottom,
-                      transition: `left ${SETTINGS_CONFIG.toggle.animation.duration}ms ${SETTINGS_CONFIG.toggle.animation.easing}, width ${SETTINGS_CONFIG.toggle.animation.duration}ms ${SETTINGS_CONFIG.toggle.animation.easing}`,
+                      transition: `left ${SETTINGS_CONFIG.toggle.animation.duration}ms ${SETTINGS_CONFIG.toggle.animation.easing}`,
                     }}
                   />
-                  
-                  {/* 正常按钮 */}
                   <button
                     onClick={() => handleWideAngleToggle(false)}
                     className={`relative z-10 rounded-full text-xs font-semibold transition-all duration-300 ${
                       !isWideAngle
                         ? 'text-white drop-shadow-lg'
                         : 'text-gray-400 hover:text-gray-200'
-                    } cursor-pointer`}
+                    }`}
                     style={{
                       paddingLeft: SETTINGS_CONFIG.toggle.button.paddingX,
                       paddingRight: SETTINGS_CONFIG.toggle.button.paddingX,
@@ -217,17 +258,15 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
                       minWidth: SETTINGS_CONFIG.toggle.button.minWidth,
                     }}
                   >
-                    正常
+                    {lang === 'zh' ? '正常' : 'Normal'}
                   </button>
-                  
-                  {/* 超广角按钮 */}
                   <button
                     onClick={() => handleWideAngleToggle(true)}
                     className={`relative z-10 rounded-full text-xs font-semibold transition-all duration-300 ${
                       isWideAngle
                         ? 'text-white drop-shadow-lg'
                         : 'text-gray-400 hover:text-gray-200'
-                    } cursor-pointer`}
+                    }`}
                     style={{
                       paddingLeft: SETTINGS_CONFIG.toggle.button.paddingX,
                       paddingRight: SETTINGS_CONFIG.toggle.button.paddingX,
@@ -236,9 +275,24 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
                       minWidth: SETTINGS_CONFIG.toggle.button.minWidth,
                     }}
                   >
-                    超广角
+                    {lang === 'zh' ? '超广角' : 'Wide'}
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* 分隔线 */}
+            <div className="border-t border-white/10"></div>
+
+            {/* 关于信息 */}
+            <div className="flex flex-col gap-1 text-xs text-white/60">
+              <div className="flex items-center justify-between">
+                <span>{lang === 'zh' ? '版本' : 'Version'}</span>
+                <span className="font-mono">v4.6.0</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>{lang === 'zh' ? '作者' : 'Author'}</span>
+                <span>CXIN</span>
               </div>
             </div>
           </div>
@@ -247,4 +301,3 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
     </>
   );
 }
-

@@ -1,6 +1,6 @@
 /**
  * 时间控制组件
- * 显示当前时间，提供弧形滑块控制时间流速
+ * 显示当前时间，提供坐标轴式滑块控制时间流速
  */
 
 'use client';
@@ -22,7 +22,7 @@ import {
 
 /**
  * TimeControl component
- * Displays current time and provides arc slider for time control
+ * Displays current time and provides axis-style slider for time control
  */
 const TimeControl = React.memo(() => {
   // State subscriptions
@@ -225,7 +225,7 @@ const TimeControl = React.memo(() => {
           </div>
         )}
 
-        {/* 弧形时间滑块 */}
+        {/* 坐标轴式时间滑块 */}
         <div style={{ pointerEvents: 'auto' }}>
           <TimeSlider width={TIME_SLIDER_CONFIG.width} height={TIME_SLIDER_CONFIG.height} />
         </div>

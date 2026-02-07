@@ -1125,7 +1125,7 @@ export const TIME_SLIDER_CONFIG = {
   trackMinWidth: 1,
   
   /** 弧线最大宽度（像素，中间） */
-  trackMaxWidth: 4,
+  trackMaxWidth: 1.5,
   
   // ==================== 速度配置 ====================
   

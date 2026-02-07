@@ -568,15 +568,15 @@ export class SceneManager {
    * sceneManager.updateMultiScaleView(distance, deltaTime, 1.5);
    * ```
    */
-  updateMultiScaleView(cameraDistance: number, deltaTime: number, starBrightness: number = 1.0): void {
+  updateMultiScaleView(cameraDistance: number, deltaTime: number): void {
     // 更新近邻恒星
     if (this.nearbyStars) {
-      this.nearbyStars.update(cameraDistance, deltaTime, starBrightness);
+      this.nearbyStars.update(cameraDistance, deltaTime);
     }
     
     // 更新 Gaia 恒星
     if (this.gaiaStars) {
-      this.gaiaStars.update(cameraDistance, deltaTime, starBrightness);
+      this.gaiaStars.update(cameraDistance, deltaTime);
     }
     
     // 更新银河系

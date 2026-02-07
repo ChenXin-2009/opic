@@ -308,7 +308,7 @@ export class NearbyStars {
   /**
    * 更新渲染（每帧调用）
    */
-  update(cameraDistance: number, deltaTime: number, starBrightness: number = 1.0): void {
+  update(cameraDistance: number, deltaTime: number): void {
     this.time += deltaTime * NEARBY_STARS_CONFIG.twinkleSpeed;
     
     // 计算目标透明度
@@ -331,14 +331,13 @@ export class NearbyStars {
     if (this.pointCloud) {
       const material = this.pointCloud.material as THREE.ShaderMaterial;
       material.uniforms.uOpacity.value = this.currentOpacity;
-      material.uniforms.uBrightness.value = starBrightness;
       material.uniforms.uTime.value = this.time;
     }
     
-    // 更新球体（球体使用简单的透明度调整）
+    // 更新球体
     this.spheres.forEach((sphere) => {
       const material = sphere.material as THREE.MeshBasicMaterial;
-      material.opacity = this.currentOpacity * starBrightness;
+      material.opacity = this.currentOpacity;
     });
   }
 

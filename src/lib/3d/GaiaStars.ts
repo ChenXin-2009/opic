@@ -365,7 +365,7 @@ export class GaiaStars {
     return points;
   }
 
-  update(cameraDistance: number, deltaTime: number, starBrightness: number = 1.0): void {
+  update(cameraDistance: number, deltaTime: number): void {
     if (!this.isLoaded) return;
     
     // 所有恒星使用相同的显示逻辑（与近邻恒星相同）
@@ -396,14 +396,12 @@ export class GaiaStars {
       this.brightStarsCloud.visible = this.brightStarsOpacity > 0.01;
       const mat = this.brightStarsCloud.material as THREE.ShaderMaterial;
       if (mat.uniforms.uOpacity) mat.uniforms.uOpacity.value = this.brightStarsOpacity;
-      if (mat.uniforms.uBrightness) mat.uniforms.uBrightness.value = starBrightness;
     }
     
     if (this.normalStarsCloud) {
       this.normalStarsCloud.visible = this.normalStarsOpacity > 0.01;
       const mat = this.normalStarsCloud.material as THREE.ShaderMaterial;
       if (mat.uniforms.uOpacity) mat.uniforms.uOpacity.value = this.normalStarsOpacity;
-      if (mat.uniforms.uBrightness) mat.uniforms.uBrightness.value = starBrightness;
     }
   }
 
