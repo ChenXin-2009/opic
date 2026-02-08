@@ -8,9 +8,9 @@
 ==================
 git status
 git add .
-git commit -m "Release 4.6.1: 更新UI，设置"
+git commit -m "Release 4.6.3: 添加加载页面"
 git checkout main
 git pull origin main
-git tag v4.6.1
+git tag v4.6.3
 git push origin main
-git push origin v4.6.1
+git push origin v4.6.3

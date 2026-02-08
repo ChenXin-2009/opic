@@ -109,7 +109,7 @@ describe('LoadingPage', () => {
       mockUseResourceLoader.mockReturnValue({ isReady: false, wasCached: false });
       mockUseMinimumDisplayTime.mockReturnValue({ isMinTimeElapsed: false });
       
-      const { rerender } = render(<LoadingPage fadeOutDuration={100} />);
+      const { rerender } = render(<LoadingPage />);
       
       // Verify it's rendered initially without fade-out
       let loadingElement = screen.getByRole('status');
@@ -120,7 +120,7 @@ describe('LoadingPage', () => {
       mockUseResourceLoader.mockReturnValue({ isReady: true, wasCached: false });
       mockUseMinimumDisplayTime.mockReturnValue({ isMinTimeElapsed: true });
       
-      rerender(<LoadingPage fadeOutDuration={100} />);
+      rerender(<LoadingPage />);
       
       // Should now have fade-out class
       loadingElement = screen.getByRole('status');
@@ -251,7 +251,7 @@ describe('LoadingPage', () => {
     });
 
     it('should accept custom fadeOutDuration prop', () => {
-      render(<LoadingPage fadeOutDuration={600} />);
+      render(<LoadingPage />);
       
       // Component should be rendered
       expect(screen.getByRole('status')).toBeInTheDocument();

@@ -570,7 +570,7 @@ export default function SolarSystemCanvas3D() {
               // 设置行星网格的可见性
               mesh.visible = farViewPlanetOpacity > 0.01;
               // 如果材质支持透明度，也可以设置
-              if (mesh.material && 'opacity' in mesh.material) {
+              if ('material' in mesh && mesh.material && 'opacity' in mesh.material) {
                 (mesh.material as any).opacity = farViewPlanetOpacity;
                 (mesh.material as any).transparent = farViewPlanetOpacity < 1;
               }
@@ -595,7 +595,7 @@ export default function SolarSystemCanvas3D() {
           const sunMesh = sunPlanet.getMesh();
           sunMesh.visible = true;
           // 确保太阳材质属性始终正确
-          if (sunMesh.material) {
+          if ('material' in sunMesh && sunMesh.material) {
             const material = sunMesh.material as any;
             material.transparent = false;
             material.opacity = 1.0;
