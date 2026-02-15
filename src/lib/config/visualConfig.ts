@@ -40,7 +40,7 @@ export const ORBIT_COLORS: Record<string, string> = {
  * 太阳点光源（PointLight）配置
  * 说明：此光源用于模拟太阳的主要照明（非屏幕空间光晕），与 Planet 的 Sprite 光晕配合使用能得到更好的视觉效果。
  * 字段说明：
- * - color: 光颜色（数值或十六进制），例如 0xffffaa。可以使用更偏白或偏暖的色调。
+ * - color: 光颜色（数值或十六进制），例如 0xFFF9F0（科学的太阳颜色，色温5778K）。
  * - intensity: 光强度，数值越大越亮。建议范围：0.5 - 15（取决于场景缩放）。
  * - distance: 光照最大影响范围（world units），较大值会让光影响更远的物体，但会增加计算量。
  * - decay: 衰减指数（物理上 2 可模拟真实衰减），更低的值会使光照范围更线性。
@@ -48,12 +48,42 @@ export const ORBIT_COLORS: Record<string, string> = {
  * - shadowMapSize: 阴影贴图分辨率（开启阴影时控制质量，越大质量越好但消耗越多）。
  */
 export const SUN_LIGHT_CONFIG = {
-  color: 0xFFF4EA,
+  color: 0xFFF9F0, // 科学的太阳颜色（色温5778K，接近白色）
   intensity: 3,
   distance: 2000,
   decay: 2,
   castShadow: false,
   shadowMapSize: 1024,
+};
+
+/**
+ * 太阳球体着色器配置
+ * 控制太阳实体球体的外观，模拟真实的光球层效果
+ * 
+ * 科学背景：
+ * - 太阳表面温度约 5778K，对应的颜色接近白色（略带黄）
+ * - 边缘变暗（limb darkening）：太阳边缘比中心暗约 40%
+ * - 米粒组织（granulation）：对流层产生的细小颗粒状结构
+ * - 表面扰动：对流运动产生的大尺度湍流
+ */
+export const SUN_SHADER_CONFIG = {
+  /** 太阳基础颜色（科学色温5778K） */
+  color: 0xFFF9F0, // RGB(255, 249, 240)
+  
+  /** 发光强度（控制整体亮度） */
+  intensity: 1.2,
+  
+  /** 边缘变暗强度（0-1，值越大边缘越暗） */
+  limbDarkeningStrength: 0.6,
+  
+  /** 表面扰动强度（模拟对流层） */
+  turbulenceStrength: 0.15,
+  
+  /** 米粒组织强度（细小颗粒感） */
+  granuleStrength: 0.08,
+  
+  /** 动画速度（表面扰动的变化速度） */
+  animationSpeed: 0.05,
 };
 
 /**
@@ -91,7 +121,7 @@ export const MARKER_CONFIG = {
 export const SUN_GLOW_CONFIG = {
   enabled: true,
   radiusMultiplier: 1.5,
-  color: 0xFFF4EA,
+  color: 0xFFF9F0, // 科学的太阳颜色（色温5778K）
   opacity: 0.6,
   
   // ==================== 远距离增强配置 ====================
@@ -365,7 +395,7 @@ export const HEADER_CONFIG = {
   borderColor: 'rgba(255, 255, 255, 0.1)',
   
   // 网站标题文本
-  titleText: 'CXIN',
+  titleText: 'SOLMAP',
   
   // 网站副标题文本
   subtitleText: 'solmap.cxin.tech',
@@ -497,48 +527,48 @@ export const PLANET_TEXTURE_CONFIG: Record<string, PlanetTextureConfig> = {
   
   // 八大行星
   mercury: {
-    baseColor: '/textures/planets/2k_mercury.jpg',
+    baseColor: '/textures/planets/2k_mercury.webp',
   },
   venus: {
-    baseColor: '/textures/planets/2k_venus_surface.jpg',
+    baseColor: '/textures/planets/2k_venus_surface.webp',
   },
   earth: {
-    baseColor: '/textures/planets/2k_earth_daymap.jpg',
-    nightMap: '/textures/planets/2k_earth_nightmap.jpg',
+    baseColor: '/textures/planets/2k_earth_daymap.webp',
+    nightMap: '/textures/planets/2k_earth_nightmap.webp',
   },
   mars: {
-    baseColor: '/textures/planets/2k_mars.jpg',
+    baseColor: '/textures/planets/2k_mars.webp',
   },
   jupiter: {
-    baseColor: '/textures/planets/2k_jupiter.jpg',
+    baseColor: '/textures/planets/2k_jupiter.webp',
   },
   saturn: {
-    baseColor: '/textures/planets/2k_saturn.jpg',
+    baseColor: '/textures/planets/2k_saturn.webp',
   },
   uranus: {
-    baseColor: '/textures/planets/2k_uranus.jpg',
+    baseColor: '/textures/planets/2k_uranus.webp',
   },
   neptune: {
-    baseColor: '/textures/planets/2k_neptune.jpg',
+    baseColor: '/textures/planets/2k_neptune.webp',
   },
   
   // 卫星
   moon: {
-    baseColor: '/textures/planets/2k_moon.jpg',
+    baseColor: '/textures/planets/2k_moon.webp',
   },
   
   // 矮行星（虚构贴图）
   ceres: {
-    baseColor: '/textures/planets/2k_ceres_fictional.jpg',
+    baseColor: '/textures/planets/2k_ceres_fictional.webp',
   },
   eris: {
-    baseColor: '/textures/planets/2k_eris_fictional.jpg',
+    baseColor: '/textures/planets/2k_eris_fictional.webp',
   },
   haumea: {
-    baseColor: '/textures/planets/2k_haumea_fictional.jpg',
+    baseColor: '/textures/planets/2k_haumea_fictional.webp',
   },
   makemake: {
-    baseColor: '/textures/planets/2k_makemake_fictional.jpg',
+    baseColor: '/textures/planets/2k_makemake_fictional.webp',
   },
 };
 
@@ -1106,8 +1136,11 @@ export const DISTANCE_DISPLAY_CONFIG = {
 export const TIME_SLIDER_CONFIG = {
   // ==================== 尺寸配置 ====================
   
-  /** 滑块宽度（像素）- 同时控制弧线长度 */
+  /** 滑块宽度（像素）- 同时控制弧线长度 - 桌面端 */
   width: 600,
+  
+  /** 滑块宽度（像素）- 移动端 */
+  widthMobile: 280,
   
   /** 滑块高度（像素） */
   height: 35,
@@ -1147,10 +1180,10 @@ export const TIME_SLIDER_CONFIG = {
   trackColorCenter: 'rgba(255, 255, 255, 0.4)',
   
   /** 前进时的高亮颜色（两端） */
-  forwardColorEnd: 'rgba(34, 197, 94, 0.1)',
+  forwardColorEnd: 'rgba(59, 130, 246, 0.1)',  // 蓝色
   
   /** 前进时的高亮颜色（中间） */
-  forwardColorCenter: 'rgba(28, 66, 255, 0.6)',
+  forwardColorCenter: 'rgba(59, 130, 246, 0.6)',  // 蓝色
   
   /** 后退时的高亮颜色（两端） */
   backwardColorEnd: 'rgba(239, 68, 68, 0.1)',
@@ -1162,7 +1195,7 @@ export const TIME_SLIDER_CONFIG = {
   sliderBorderColor: 'rgba(255, 255, 255, 0.8)',
   
   /** 滑块前进时边框颜色 */
-  sliderForwardColor: '#4e5dffff',
+  sliderForwardColor: '#3b82f6',  // 蓝色
   
   /** 滑块后退时边框颜色 */
   sliderBackwardColor: '#ef4444',
@@ -1176,7 +1209,7 @@ export const TIME_SLIDER_CONFIG = {
   // ==================== 速度文字配置 ====================
   
   /** 速度文字前进颜色 */
-  speedTextForwardColor: '#3799e9ff',
+  speedTextForwardColor: '#3b82f6',  // 蓝色
   
   /** 速度文字后退颜色 */
   speedTextBackwardColor: '#ef4444',
@@ -1230,10 +1263,10 @@ export const TIME_CONTROL_CONFIG = {
   textColor: '#ffffff',
   
   /** 未来时间差颜色 */
-  futureColor: '#60a5fa',
+  futureColor: '#60a5fa',  // 蓝色
   
   /** 过去时间差颜色 */
-  pastColor: '#fb923c',
+  pastColor: '#9ca3af',  // 深灰色
   
   /** 当前时间（"现在"）颜色 */
   nowColor: '#ffffffff',
@@ -1261,10 +1294,10 @@ export const TIME_CONTROL_CONFIG = {
   // ==================== 按钮配置 ====================
   
   /** "现在"按钮背景色 */
-  nowButtonBg: 'rgba(59, 130, 246, 0.8)',
+  nowButtonBg: 'rgba(59, 130, 246, 0.8)',  // 蓝色
   
   /** "现在"按钮悬停背景色 */
-  nowButtonHoverBg: '#3b82f6',
+  nowButtonHoverBg: '#3b82f6',  // 蓝色
   
   /** "现在"按钮文字颜色 */
   nowButtonTextColor: '#ffffff',
@@ -1290,17 +1323,23 @@ export const TIME_CONTROL_CONFIG = {
   // ==================== 布局配置 ====================
   
   /** 底部距离（像素） */
-  bottomOffset: 20,
+  bottomOffset: 10,
   
   /** 元素间距 - 移动端（像素） */
-  gapMobile: 12,
+  gapMobile: 6,
   
   /** 元素间距 - 桌面端（像素） */
-  gapDesktop: 30,
+  gapDesktop: 8,
   
-  /** 日期/时间区域固定宽度（像素） */
-  dateTimeWidth: 110,
+  /** 日期/时间区域固定宽度（像素）- 桌面端 */
+  dateTimeWidth: 200,
   
-  /** 中间区域（时间差/现在）固定宽度（像素） */
+  /** 日期/时间区域固定宽度（像素）- 移动端 */
+  dateTimeWidthMobile: 140,
+  
+  /** 中间区域（时间差/现在）固定宽度（像素）- 桌面端 */
   middleSectionWidth: 250,
+  
+  /** 中间区域（时间差/现在）固定宽度（像素）- 移动端 */
+  middleSectionWidthMobile: 120,
 };

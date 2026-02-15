@@ -35,6 +35,19 @@ const TimeControl = React.memo(() => {
   const calendarButtonRef = useRef<HTMLButtonElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   
+  // 响应式检测
+  const [isMobile, setIsMobile] = React.useState(false);
+  
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
   // Custom hooks
   const realTime = useRealTime();
   const displayTime = useThrottledTime(currentTime, 100);
@@ -69,6 +82,11 @@ const TimeControl = React.memo(() => {
   }
 
   const cfg = TIME_CONTROL_CONFIG;
+  
+  // 响应式配置
+  const dateTimeWidth = isMobile ? cfg.dateTimeWidthMobile : cfg.dateTimeWidth;
+  const middleSectionWidth = isMobile ? cfg.middleSectionWidthMobile : cfg.middleSectionWidth;
+  const sliderWidth = isMobile ? TIME_SLIDER_CONFIG.widthMobile : TIME_SLIDER_CONFIG.width;
 
   return (
     <>
@@ -101,7 +119,7 @@ const TimeControl = React.memo(() => {
               pointerEvents: 'none', 
               color: cfg.textColor,
               fontSize: `${cfg.dateTimeSizeMobile}px`,
-              width: `${cfg.dateTimeWidth}px`,
+              width: `${dateTimeWidth}px`,
               flexShrink: 0,
             }} 
             suppressHydrationWarning
@@ -114,7 +132,7 @@ const TimeControl = React.memo(() => {
             className="flex items-center justify-center gap-2" 
             style={{ 
               pointerEvents: 'none',
-              width: `${cfg.middleSectionWidth}px`,
+              width: `${middleSectionWidth}px`,
               flexShrink: 0,
             }}
           >
@@ -201,7 +219,7 @@ const TimeControl = React.memo(() => {
               pointerEvents: 'none', 
               color: cfg.textColor,
               fontSize: `${cfg.dateTimeSizeMobile}px`,
-              width: `${cfg.dateTimeWidth}px`,
+              width: `${dateTimeWidth}px`,
               flexShrink: 0,
             }} 
             suppressHydrationWarning
@@ -227,7 +245,7 @@ const TimeControl = React.memo(() => {
 
         {/* 坐标轴式时间滑块 */}
         <div style={{ pointerEvents: 'auto' }}>
-          <TimeSlider width={TIME_SLIDER_CONFIG.width} height={TIME_SLIDER_CONFIG.height} />
+          <TimeSlider width={sliderWidth} height={TIME_SLIDER_CONFIG.height} />
         </div>
       </div>
 

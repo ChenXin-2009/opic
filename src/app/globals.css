@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Novecento Wide 字体 */
+@font-face {
+  font-family: 'Novecento Wide';
+  src: url('/fonts/Novecento-wide-Normal-2.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Novecento Wide';
+  src: url('/fonts/Novecento-Wide-Bold-2.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -27,7 +44,7 @@
 
 /* 覆盖 Tailwind 的等宽字体类，让顶栏时间等使用系统字体 + 等宽权重 */
 .font-mono {
-  font-family: 'Source Han Serif CN', 'SimSun', serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Novecento Wide', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   font-weight: var(--font-weight-mono);
 }
 
@@ -35,8 +52,8 @@ body {
   /* 加载完成前保持黑色背景 */
   background: #000;
   color: var(--foreground);
-  /* 全站默认使用系统字体 */
-  font-family: 'Source Han Serif CN', 'SimSun', serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* 全站默认使用无衬线字体 */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
   font-weight: var(--font-weight-body);
   /* 允许触摸操作但防止页面滚动 */
   touch-action: manipulation;
@@ -44,9 +61,37 @@ body {
   overflow: hidden;
 }
 
+/* 数字和英文使用 Novecento Wide */
+body {
+  font-feature-settings: "tnum" 1;
+}
+
+/* 为数字和英文字符指定 Novecento Wide 字体 */
+@supports (font-variant-numeric: tabular-nums) {
+  body {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 /* 加载完成后恢复正常背景色 */
 body.loaded {
   background: var(--background);
+}
+
+/* 数字和英文专用字体类 */
+.font-numeric {
+  font-family: 'Novecento Wide', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* 为包含数字的元素自动应用 Novecento Wide */
+.numeric-content {
+  font-family: 'Novecento Wide', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 行星标签使用无衬线字体 */
+.planet-label {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  font-weight: var(--font-weight-label);
 }
 
 /* 允许触摸操作但防止页面滚动 */

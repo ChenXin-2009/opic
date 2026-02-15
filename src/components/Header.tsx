@@ -160,6 +160,7 @@ function getTitleStyles(cfg: any, isFloating: boolean): React.CSSProperties {
     color: cfg.textColor ?? HEADER_CONFIG.textColor,
     lineHeight: 1,
     letterSpacing: '0.5px',
+    fontFamily: '"Novecento Wide", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     ...(isFloating ? { textShadow: '0 1px 3px rgba(0, 0, 0, 0.8)' } : {}),
   };
 }

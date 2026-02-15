@@ -8,6 +8,7 @@ import { GALAXY_CONFIG, SCALE_VIEW_CONFIG, LIGHT_YEAR_TO_AU } from '../config/ga
 
 export class GalaxyRenderer {
   private group: THREE.Group;
+  private sideViewGroup: THREE.Group; // 独立的侧视图组
   private topPlanes: THREE.Mesh[] = [];
   private sidePlanes: THREE.Mesh[] = [];
   private currentOpacity = 0;
@@ -19,12 +20,22 @@ export class GalaxyRenderer {
     this.group.name = 'Galaxy';
     this.group.visible = false;
     
+    // 创建独立的侧视图组
+    this.sideViewGroup = new THREE.Group();
+    this.sideViewGroup.name = 'GalaxySideView';
+    
     // 银河系平面相对于黄道面的旋转（从配置读取）
     const cfg = GALAXY_CONFIG;
     this.group.rotation.order = 'YXZ';
     this.group.rotation.x = cfg.rotationX * (Math.PI / 180);
     this.group.rotation.y = cfg.rotationY * (Math.PI / 180);
     this.group.rotation.z = cfg.rotationZ * (Math.PI / 180);
+    
+    // 侧视图使用相同的旋转
+    this.sideViewGroup.rotation.order = 'YXZ';
+    this.sideViewGroup.rotation.x = cfg.rotationX * (Math.PI / 180);
+    this.sideViewGroup.rotation.y = cfg.rotationY * (Math.PI / 180);
+    this.sideViewGroup.rotation.z = cfg.rotationZ * (Math.PI / 180);
     
     this.createLayeredPlanes();
     this.createSidePlanes();
@@ -170,7 +181,7 @@ export class GalaxyRenderer {
         plane.renderOrder = 39;
         
         this.sidePlanes.push(plane);
-        this.group.add(plane);
+        this.sideViewGroup.add(plane); // 添加到独立的侧视图组
       }
     });
   }
@@ -186,14 +197,43 @@ export class GalaxyRenderer {
     }
 
     const cfg = GALAXY_CONFIG;
+    const scaleConfig = SCALE_VIEW_CONFIG;
+    
+    // 侧视图应该在银河系尺度显示，在 Gaia 星星层级隐藏
+    // 银河系开始显示：1000 光年
+    // Gaia 星星显示：30000 AU - 1000 光年
+    // 侧视图显示：> 1000 光年（与银河系俯视图同步）
+    
+    let sideViewOpacity = 0;
+    
+    // 侧视图只在银河系尺度显示（与俯视图同步）
+    if (cameraDistance >= scaleConfig.galaxyShowStart) {
+      if (cameraDistance < scaleConfig.galaxyShowFull) {
+        // 淡入阶段（与银河系同步）
+        const range = scaleConfig.galaxyShowFull - scaleConfig.galaxyShowStart;
+        sideViewOpacity = (cameraDistance - scaleConfig.galaxyShowStart) / range;
+      } else {
+        // 完全显示
+        sideViewOpacity = 1.0;
+      }
+    }
+    
+    // 更新俯视图透明度（只在银河系尺度显示）
     for (const plane of this.topPlanes) {
       const mat = plane.material as THREE.MeshBasicMaterial;
       mat.opacity = this.currentOpacity * cfg.topViewOpacity * cfg.layerOpacity;
     }
     
+    // 更新侧视图透明度和可见性（与银河系同步显示）
     for (const plane of this.sidePlanes) {
-      const mat = plane.material as THREE.MeshBasicMaterial;
-      mat.opacity = this.currentOpacity * cfg.sideViewOpacity;
+      if (sideViewOpacity > 0.01) {
+        plane.visible = true;
+        const mat = plane.material as THREE.MeshBasicMaterial;
+        mat.opacity = cfg.sideViewOpacity * sideViewOpacity;
+      } else {
+        // 完全隐藏
+        plane.visible = false;
+      }
     }
   }
 
@@ -205,6 +245,7 @@ export class GalaxyRenderer {
   }
 
   getGroup(): THREE.Group { return this.group; }
+  getSideViewGroup(): THREE.Group { return this.sideViewGroup; }
   getOpacity(): number { return this.currentOpacity; }
   getIsVisible(): boolean { return this.isVisible; }
 

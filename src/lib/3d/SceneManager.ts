@@ -24,7 +24,7 @@ import { TextureLoadError, RenderError } from '../errors/base';
 import { logError, tryCatch } from '../utils/errors';
 
 // 银河系背景图片路径（圆柱投影/equirectangular）
-const MILKY_WAY_TEXTURE_PATH = '/textures/planets/8k_stars_milky_way.jpg';
+const MILKY_WAY_TEXTURE_PATH = '/textures/planets/8k_stars_milky_way.webp';
 
 // 🔧 银河系天空盒方位配置（度）
 // 将银道坐标系的 equirectangular 图片转换到赤道坐标系
@@ -209,6 +209,7 @@ export class SceneManager {
     if (GALAXY_CONFIG.enabled) {
       this.galaxyRenderer = new GalaxyRenderer();
       this.scene.add(this.galaxyRenderer.getGroup());
+      this.scene.add(this.galaxyRenderer.getSideViewGroup()); // 添加独立的侧视图组
     }
   }
 
@@ -594,26 +595,34 @@ export class SceneManager {
   private updateSkyboxOpacity(cameraDistance: number, deltaTime: number): void {
     const config = SCALE_VIEW_CONFIG;
     
-    // 计算目标透明度
+    // 0.7 光年 = 0.7 * LIGHT_YEAR_TO_AU
+    const fadeEnd = 0.7 * 63241.077; // 约 44269 AU
+    
+    // 直接根据距离计算，不使用平滑过渡
+    let targetOpacity = 1;
     if (cameraDistance < config.milkyWayBackgroundFadeStart) {
-      this.skyboxTargetOpacity = 1;
-    } else if (cameraDistance < config.milkyWayBackgroundFadeEnd) {
-      const range = config.milkyWayBackgroundFadeEnd - config.milkyWayBackgroundFadeStart;
-      this.skyboxTargetOpacity = 1 - (cameraDistance - config.milkyWayBackgroundFadeStart) / range;
+      targetOpacity = 1;
+    } else if (cameraDistance < fadeEnd) {
+      const range = fadeEnd - config.milkyWayBackgroundFadeStart;
+      targetOpacity = 1 - (cameraDistance - config.milkyWayBackgroundFadeStart) / range;
     } else {
-      this.skyboxTargetOpacity = 0;
+      targetOpacity = 0;
     }
     
-    // 平滑过渡（与星星相同的渐隐速度）
-    const fadeSpeed = 2.0;
-    this.skyboxOpacity += (this.skyboxTargetOpacity - this.skyboxOpacity) * Math.min(deltaTime * fadeSpeed, 1);
+    // 直接设置透明度，不使用平滑过渡
+    this.skyboxOpacity = targetOpacity;
     
     // 应用透明度到天空盒
     if (this.skybox) {
-      const material = this.skybox.material as THREE.MeshBasicMaterial;
-      material.opacity = this.skyboxOpacity;
-      material.transparent = this.skyboxOpacity < 1;
-      this.skybox.visible = this.skyboxOpacity > 0.01;
+      if (this.skyboxOpacity > 0.01) {
+        this.skybox.visible = true;
+        const material = this.skybox.material as THREE.MeshBasicMaterial;
+        material.opacity = this.skyboxOpacity;
+        material.transparent = this.skyboxOpacity < 1;
+      } else {
+        // 完全隐藏
+        this.skybox.visible = false;
+      }
     }
   }
   

@@ -1,7 +1,7 @@
 /**
  * LoadingSpinner Component
  * 
- * A rotating loading spinner with Arknights-style design.
+ * A rotating loading spinner with minimalist design.
  * Features multiple concentric rings with rotation and pulse animations.
  * 
  * Requirements: 6.1, 6.3, 9.1, 9.5
@@ -10,14 +10,14 @@
 import { LoadingSpinnerProps } from './types';
 
 /**
- * LoadingSpinner - Arknights-style rotating loading animation
+ * LoadingSpinner - Minimalist rotating loading animation
  * 
  * @param isAnimating - Controls whether the animation is playing
  * @param size - Size of the spinner in pixels (default: 80)
  * 
  * Design features:
  * - Multi-layer concentric rings
- * - Blue (sky-500) color scheme with varying opacity
+ * - White/gray color scheme with varying opacity
  * - Rotation animation on outer ring
  * - Pulse animation on inner ring
  * - GPU-accelerated transforms
@@ -34,7 +34,7 @@ export default function LoadingSpinner({
     >
       {/* Outer ring - static background */}
       <div 
-        className="absolute inset-0 rounded-full border-4 border-sky-500/20"
+        className="absolute inset-0 rounded-full border-4 border-white/20"
         style={{ 
           width: size, 
           height: size
@@ -43,7 +43,7 @@ export default function LoadingSpinner({
       
       {/* Rotating arc - main animation */}
       <div 
-        className={`absolute inset-0 rounded-full border-4 border-transparent border-t-sky-500 
+        className={`absolute inset-0 rounded-full border-4 border-transparent border-t-white 
           ${isAnimating ? 'motion-safe:animate-spin' : ''} motion-reduce:animate-none`}
         style={{ 
           width: size, 
@@ -55,7 +55,7 @@ export default function LoadingSpinner({
       
       {/* Secondary rotating arc - offset for visual interest */}
       <div 
-        className={`absolute inset-0 rounded-full border-4 border-transparent border-r-sky-500/60 
+        className={`absolute inset-0 rounded-full border-4 border-transparent border-r-white/60 
           ${isAnimating ? 'motion-safe:animate-spin' : ''} motion-reduce:animate-none`}
         style={{ 
           width: size, 
@@ -68,7 +68,7 @@ export default function LoadingSpinner({
       
       {/* Inner ring - pulsing animation */}
       <div 
-        className={`absolute rounded-full border-2 border-sky-500/40 
+        className={`absolute rounded-full border-2 border-white/40 
           ${isAnimating ? 'motion-safe:animate-pulse' : ''} motion-reduce:animate-none`}
         style={{ 
           width: size * 0.6, 
@@ -79,14 +79,14 @@ export default function LoadingSpinner({
       
       {/* Center dot - static accent */}
       <div 
-        className="absolute rounded-full bg-sky-500/60"
+        className="absolute rounded-full bg-white/60"
         style={{ 
           width: size * 0.15, 
           height: size * 0.15
         }}
       />
       
-      {/* Decorative corner elements - Arknights style */}
+      {/* Decorative corner elements */}
       <div 
         className="absolute"
         style={{ 
@@ -96,8 +96,8 @@ export default function LoadingSpinner({
           left: 0
         }}
       >
-        <div className="absolute top-0 left-0 w-2 h-0.5 bg-sky-500/80" />
-        <div className="absolute top-0 left-0 w-0.5 h-2 bg-sky-500/80" />
+        <div className="absolute top-0 left-0 w-2 h-0.5 bg-white/80" />
+        <div className="absolute top-0 left-0 w-0.5 h-2 bg-white/80" />
       </div>
       
       <div 
@@ -109,8 +109,8 @@ export default function LoadingSpinner({
           right: 0
         }}
       >
-        <div className="absolute bottom-0 right-0 w-2 h-0.5 bg-sky-500/80" />
-        <div className="absolute bottom-0 right-0 w-0.5 h-2 bg-sky-500/80" />
+        <div className="absolute bottom-0 right-0 w-2 h-0.5 bg-white/80" />
+        <div className="absolute bottom-0 right-0 w-0.5 h-2 bg-white/80" />
       </div>
     </div>
   );

@@ -102,7 +102,7 @@ export function ErrorFallback({
           onClick={onRetry}
           style={{
             padding: '0.5rem 1.5rem',
-            backgroundColor: '#3b82f6',
+            backgroundColor: '#6b7280',
             color: '#fff',
             border: 'none',
             borderRadius: '0.375rem',
@@ -221,7 +221,7 @@ export function FullPageErrorFallback({
           onClick={onRetry}
           style={{
             padding: '0.75rem 2rem',
-            backgroundColor: '#3b82f6',
+            backgroundColor: '#6b7280',
             color: '#fff',
             border: 'none',
             borderRadius: '0.5rem',

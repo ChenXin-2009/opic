@@ -16,6 +16,9 @@ const ARKNIGHTS_CONFIG = {
   position: {
     bottom: '2rem',
     right: '2rem',
+    // 移动端位置（避免被时间控制遮挡）
+    bottomMobile: '10rem',
+    rightMobile: '1rem',
   },
   
   button: {
@@ -49,11 +52,26 @@ interface SettingsMenuProps {
 export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isWideAngle, setIsWideAngle] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const lang = useSolarSystemStore((state) => state.lang);
   const setLang = useSolarSystemStore((state) => state.setLang);
+
+  // 检测是否为移动端
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // 点击外部关闭菜单
   useEffect(() => {
@@ -94,8 +112,8 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="fixed group"
         style={{
-          bottom: ARKNIGHTS_CONFIG.position.bottom,
-          right: ARKNIGHTS_CONFIG.position.right,
+          bottom: isMobile ? ARKNIGHTS_CONFIG.position.bottomMobile : ARKNIGHTS_CONFIG.position.bottom,
+          right: isMobile ? ARKNIGHTS_CONFIG.position.rightMobile : ARKNIGHTS_CONFIG.position.right,
           width: ARKNIGHTS_CONFIG.button.size,
           height: ARKNIGHTS_CONFIG.button.size,
           zIndex: 99999,
@@ -172,8 +190,10 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
           ref={menuRef}
           className="fixed z-50"
           style={{
-            bottom: `calc(${ARKNIGHTS_CONFIG.position.bottom} + ${ARKNIGHTS_CONFIG.button.size} + 0.75rem)`,
-            right: ARKNIGHTS_CONFIG.position.right,
+            bottom: isMobile 
+              ? `calc(${ARKNIGHTS_CONFIG.position.bottomMobile} + ${ARKNIGHTS_CONFIG.button.size} + 0.75rem)`
+              : `calc(${ARKNIGHTS_CONFIG.position.bottom} + ${ARKNIGHTS_CONFIG.button.size} + 0.75rem)`,
+            right: isMobile ? ARKNIGHTS_CONFIG.position.rightMobile : ARKNIGHTS_CONFIG.position.right,
             width: ARKNIGHTS_CONFIG.menu.width,
             maxHeight: ARKNIGHTS_CONFIG.menu.maxHeight,
             background: ARKNIGHTS_CONFIG.colors.dark,

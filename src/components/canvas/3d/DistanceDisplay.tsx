@@ -111,8 +111,17 @@ export default function DistanceDisplay({ distanceAU }: DistanceDisplayProps) {
       }}
     >
       <div style={{ opacity: cfg.titleOpacity }}>{cfg.titleText}</div>
-      <div style={{ fontSize: `${cfg.valueFontSize}px`, fontWeight: cfg.valueFontWeight }}>{value}</div>
-      <div style={{ fontSize: `${cfg.unitFontSize}px`, opacity: cfg.unitOpacity }}>{unit}</div>
+      <div style={{ 
+        fontSize: `${cfg.valueFontSize}px`, 
+        fontWeight: 400,
+        fontFamily: '"Novecento Wide", sans-serif',
+      }}>{value}</div>
+      <div style={{ 
+        fontSize: `${cfg.unitFontSize}px`, 
+        opacity: cfg.unitOpacity,
+        fontWeight: 700,
+        fontFamily: '"Novecento Wide", sans-serif',
+      }}>{unit}</div>
       
       {/* 精度警告 */}
       {showPrecisionWarning && (

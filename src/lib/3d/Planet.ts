@@ -18,7 +18,7 @@
 import * as THREE from 'three';
 import type { CelestialBody } from '@/lib/astronomy/orbit';
 import { CelestialBodyConfig, rotationPeriodToSpeed, calculateRotationAxis, CELESTIAL_BODIES } from '@/lib/types/celestialTypes';
-import { MARKER_CONFIG, SUN_GLOW_CONFIG, SUN_RAINBOW_LAYERS, SUN_STAR_SPIKES_CONFIG, PLANET_LOD_CONFIG, PLANET_GRID_CONFIG, PLANET_LIGHTING_CONFIG, getCelestialMaterialParams, SATURN_RING_CONFIG } from '@/lib/config/visualConfig';
+import { MARKER_CONFIG, SUN_GLOW_CONFIG, SUN_RAINBOW_LAYERS, SUN_STAR_SPIKES_CONFIG, PLANET_LOD_CONFIG, PLANET_GRID_CONFIG, PLANET_LIGHTING_CONFIG, getCelestialMaterialParams, SATURN_RING_CONFIG, SUN_SHADER_CONFIG } from '@/lib/config/visualConfig';
 
 // 真实行星半径（AU单位）
 // 1 AU = 149,597,870 km
@@ -159,14 +159,16 @@ export class Planet {
     // 使用真实半径创建行星
     const radius = this.realRadius;
 
-    // 太阳不创建球体几何体，只创建空容器用于承载光晕
+    // 太阳和行星都创建实体球体
     if (this.isSun) {
-      this.geometry = null;
-      this.material = null;
-      this.targetSegments = 0;
-      this.currentSegments = 0;
-      // 创建空的 Object3D 作为光晕容器
-      this.mesh = new THREE.Object3D();
+      // 太阳使用较高的分段数以获得更平滑的球体
+      this.targetSegments = 64;
+      this.currentSegments = 64;
+      this.geometry = new THREE.SphereGeometry(radius, this.currentSegments, this.currentSegments);
+      // 太阳使用专门的着色器材质，模拟光球层效果
+      this.material = this.createSunShaderMaterial();
+      // 创建网格
+      this.mesh = new THREE.Mesh(this.geometry, this.material);
     } else {
       // 行星创建正常的几何体和材质
       this.targetSegments = PLANET_LOD_CONFIG.baseSegments;
@@ -199,6 +201,120 @@ export class Planet {
     if (this.planetName === 'saturn' && SATURN_RING_CONFIG.enabled) {
       this.createSaturnRing();
     }
+  }
+
+  /**
+   * 创建太阳着色器材质
+   * 模拟真实的光球层效果：
+   * - 科学的太阳颜色（接近白色，色温5778K）
+   * - 边缘变暗效果（limb darkening）
+   * - 动态的表面扰动（模拟对流层）
+   * - 发光效果
+   */
+  private createSunShaderMaterial(): THREE.ShaderMaterial {
+    const vertexShader = `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      varying vec2 vUv;
+      
+      void main() {
+        vUv = uv;
+        vPosition = position;
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+    
+    const fragmentShader = `
+      uniform float uTime;
+      uniform vec3 uSunColor;
+      uniform float uIntensity;
+      uniform float uLimbDarkeningStrength;
+      uniform float uTurbulenceStrength;
+      uniform float uGranuleStrength;
+      
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      varying vec2 vUv;
+      
+      // 简化的噪声函数（用于表面扰动）
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+      
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        
+        float a = hash(i);
+        float b = hash(i + vec2(1.0, 0.0));
+        float c = hash(i + vec2(0.0, 1.0));
+        float d = hash(i + vec2(1.0, 1.0));
+        
+        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+      }
+      
+      // 分形布朗运动（用于更复杂的纹理）
+      float fbm(vec2 p) {
+        float value = 0.0;
+        float amplitude = 0.5;
+        float frequency = 1.0;
+        
+        for (int i = 0; i < 4; i++) {
+          value += amplitude * noise(p * frequency);
+          frequency *= 2.0;
+          amplitude *= 0.5;
+        }
+        
+        return value;
+      }
+      
+      void main() {
+        // 计算视线方向与法线的夹角（用于边缘变暗）
+        vec3 viewDirection = normalize(cameraPosition - vPosition);
+        float fresnel = dot(viewDirection, vNormal);
+        
+        // 边缘变暗效果（limb darkening）
+        // 太阳边缘看起来比中心暗
+        float limbDarkening = pow(fresnel, uLimbDarkeningStrength);
+        
+        // 添加动态表面扰动（模拟对流层）
+        vec2 uvDistorted = vUv * 8.0 + uTime;
+        float turbulence = fbm(uvDistorted) * uTurbulenceStrength;
+        
+        // 添加更细小的颗粒感（模拟米粒组织）
+        vec2 uvGranules = vUv * 40.0 + uTime * 2.0;
+        float granules = noise(uvGranules) * uGranuleStrength;
+        
+        // 组合所有效果
+        float brightness = limbDarkening + turbulence + granules;
+        brightness = clamp(brightness, 0.7, 1.3);
+        
+        // 应用亮度和强度
+        vec3 finalColor = uSunColor * brightness * uIntensity;
+        
+        // 添加轻微的发光效果（边缘更亮）
+        float edgeGlow = pow(1.0 - fresnel, 3.0) * 0.3;
+        finalColor += vec3(edgeGlow);
+        
+        gl_FragColor = vec4(finalColor, 1.0);
+      }
+    `;
+    
+    return new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: {
+        uTime: { value: 0.0 },
+        uSunColor: { value: new THREE.Color(SUN_SHADER_CONFIG.color) },
+        uIntensity: { value: SUN_SHADER_CONFIG.intensity },
+        uLimbDarkeningStrength: { value: SUN_SHADER_CONFIG.limbDarkeningStrength },
+        uTurbulenceStrength: { value: SUN_SHADER_CONFIG.turbulenceStrength },
+        uGranuleStrength: { value: SUN_SHADER_CONFIG.granuleStrength },
+      },
+      side: THREE.FrontSide,
+    });
   }
 
   /**
@@ -1119,6 +1235,11 @@ export class Planet {
    * @param currentTimeInDays 当前时间（从 J2000.0 起的天数）
    */
   updateRotation(currentTimeInDays: number, timeSpeed: number = 1, isPlaying: boolean = true): void {
+    // 更新太阳着色器的时间参数（用于动画效果）
+    if (this.isSun && this.material instanceof THREE.ShaderMaterial) {
+      this.material.uniforms.uTime.value = currentTimeInDays * SUN_SHADER_CONFIG.animationSpeed;
+    }
+    
     if (this.rotationSpeed === 0) return;
     
     // 计算自转角速度（度/天）
@@ -1277,8 +1398,8 @@ export class Planet {
    * 释放旧几何体，创建新几何体
    */
   private rebuildGeometry(): void {
-    // 太阳没有几何体，跳过
-    if (!this.geometry || this.isSun) return;
+    // 检查是否有几何体
+    if (!this.geometry) return;
     
     const radius = this.geometry.parameters.radius;
     

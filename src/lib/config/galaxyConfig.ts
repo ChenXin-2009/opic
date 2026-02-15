@@ -44,7 +44,7 @@ export const GALAXY_CONFIG = {
   thickness: 1000,
   diskThickness: 300,
   sunDistanceFromCenter: 26000,
-  topViewTexturePath: '/textures/planets/MilkyWayTop_Gaia_2100.jpg',
+  topViewTexturePath: '/textures/planets/MilkyWayTop_Gaia_compressed.webp',
   topViewOpacity: 1.0,
   topViewScale: 1.0,
   // 立体厚度配置
@@ -68,10 +68,10 @@ export const GALAXY_CONFIG = {
   sideViewTexturePath: '/textures/planets/MilkyWaySide_Gaia_5000_2.jpg',
   sideViewOpacity: 0.05,       // 侧视图透明度
   sideViewCount: 30,           // 侧视图数量（均匀分布）
-  // 旋转配置（度）
-  rotationX: -90,
-  rotationY: 30,
-  rotationZ: 90,
+  // 旋转配置（度）- 基于天文学精确计算
+  rotationX: -60.2,  // 银道面相对于黄道面的精确倾角
+  rotationY: 13.4,   // 银河中心方向（人马座）
+  rotationZ: 103.0,  // 银道面滚转角度
   // 其他配置
   particleCount: 100000,
   particleBaseSize: 1.0,
