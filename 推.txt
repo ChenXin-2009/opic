@@ -8,9 +8,9 @@
 ==================
 git status
 git add .
-git commit -m "Release 5.0.0: 添加更多的银河系系外层级"
+git commit -m "Release 5.0.1: 修正更高层级与银河系相对的方向"
 git checkout main
 git pull origin main
-git tag v5.0.0
+git tag v5.0.1
 git push origin main
-git push origin v5.0.0
+git push origin v5.0.1

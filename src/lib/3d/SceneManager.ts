@@ -100,6 +100,7 @@ export class SceneManager {
   private skyboxTargetOpacity: number = 1;
   
   // 宇宙尺度渲染器
+  private universeGroup: THREE.Group; // 外部星团和蓝色圆圈的父容器
   private localGroupRenderer: any | null = null;
   private nearbyGroupsRenderer: any | null = null;
   private virgoSuperclusterRenderer: any | null = null;
@@ -125,6 +126,18 @@ export class SceneManager {
    */
   constructor(container: HTMLElement) {
     this.container = container;
+    
+    // 创建宇宙尺度组（包含外部星团和蓝色圆圈）
+    this.universeGroup = new THREE.Group();
+    this.universeGroup.name = 'UniverseGroup';
+    
+    // 应用旋转偏移以对齐银河系和外部星团坐标系
+    // 这些值通过 GalaxyReferenceDebugger 调试得出
+    const degToRad = Math.PI / 180;
+    this.universeGroup.rotation.order = 'YXZ';
+    this.universeGroup.rotation.x = 58.0 * degToRad;
+    this.universeGroup.rotation.y = -21.0 * degToRad;
+    this.universeGroup.rotation.z = 59.5 * degToRad;
 
     // 初始化渲染器
     this.renderer = new THREE.WebGLRenderer({
@@ -151,6 +164,9 @@ export class SceneManager {
     // 初始化场景
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000); // 黑色背景（图片加载前显示）
+    
+    // 添加宇宙尺度组到场景
+    this.scene.add(this.universeGroup);
     
     // 添加银河系天空盒背景
     this.createMilkyWaySkybox();
@@ -236,8 +252,9 @@ export class SceneManager {
     try {
       const { GalaxyPlaneDebugRenderer } = await import('./GalaxyPlaneDebugRenderer');
       this.galaxyPlaneDebugRenderer = new GalaxyPlaneDebugRenderer();
-      this.scene.add(this.galaxyPlaneDebugRenderer.getGroup());
-      console.log('[SceneManager] 银河系平面调试渲染器已初始化');
+      // 添加到宇宙组，而不是直接添加到场景
+      this.universeGroup.add(this.galaxyPlaneDebugRenderer.getGroup());
+      console.log('[SceneManager] 银河系平面调试渲染器已初始化（添加到宇宙组）');
     } catch (error) {
       console.error('[SceneManager] 无法加载银河系平面调试渲染器:', error);
     }
@@ -724,12 +741,13 @@ export class SceneManager {
    */
   setLocalGroupRenderer(renderer: any): void {
     if (this.localGroupRenderer) {
-      this.scene.remove(this.localGroupRenderer.getGroup());
+      this.universeGroup.remove(this.localGroupRenderer.getGroup());
       this.localGroupRenderer.dispose();
     }
     this.localGroupRenderer = renderer;
     if (renderer) {
-      this.scene.add(renderer.getGroup());
+      // 添加到宇宙组，而不是直接添加到场景
+      this.universeGroup.add(renderer.getGroup());
     }
   }
   
@@ -738,12 +756,13 @@ export class SceneManager {
    */
   setNearbyGroupsRenderer(renderer: any): void {
     if (this.nearbyGroupsRenderer) {
-      this.scene.remove(this.nearbyGroupsRenderer.getGroup());
+      this.universeGroup.remove(this.nearbyGroupsRenderer.getGroup());
       this.nearbyGroupsRenderer.dispose();
     }
     this.nearbyGroupsRenderer = renderer;
     if (renderer) {
-      this.scene.add(renderer.getGroup());
+      // 添加到宇宙组，而不是直接添加到场景
+      this.universeGroup.add(renderer.getGroup());
     }
   }
   
@@ -752,12 +771,13 @@ export class SceneManager {
    */
   setVirgoSuperclusterRenderer(renderer: any): void {
     if (this.virgoSuperclusterRenderer) {
-      this.scene.remove(this.virgoSuperclusterRenderer.getGroup());
+      this.universeGroup.remove(this.virgoSuperclusterRenderer.getGroup());
       this.virgoSuperclusterRenderer.dispose();
     }
     this.virgoSuperclusterRenderer = renderer;
     if (renderer) {
-      this.scene.add(renderer.getGroup());
+      // 添加到宇宙组，而不是直接添加到场景
+      this.universeGroup.add(renderer.getGroup());
     }
   }
   
@@ -766,12 +786,13 @@ export class SceneManager {
    */
   setLaniakeaSuperclusterRenderer(renderer: any): void {
     if (this.laniakeaSuperclusterRenderer) {
-      this.scene.remove(this.laniakeaSuperclusterRenderer.getGroup());
+      this.universeGroup.remove(this.laniakeaSuperclusterRenderer.getGroup());
       this.laniakeaSuperclusterRenderer.dispose();
     }
     this.laniakeaSuperclusterRenderer = renderer;
     if (renderer) {
-      this.scene.add(renderer.getGroup());
+      // 添加到宇宙组，而不是直接添加到场景
+      this.universeGroup.add(renderer.getGroup());
     }
   }
 
@@ -804,16 +825,37 @@ export class SceneManager {
   }
   
   /**
+   * 获取银河系平面调试渲染器
+   */
+  getGalaxyPlaneDebugRenderer(): any | null {
+    return this.galaxyPlaneDebugRenderer;
+  }
+  
+  /**
+   * 设置宇宙组旋转偏移（用于调试对齐）
+   * 这会同时旋转蓝色圆圈和所有外部星团
+   */
+  setUniverseGroupRotationOffset(x: number, y: number, z: number): void {
+    const degToRad = Math.PI / 180;
+    this.universeGroup.rotation.order = 'YXZ';
+    this.universeGroup.rotation.x = x * degToRad;
+    this.universeGroup.rotation.y = y * degToRad;
+    this.universeGroup.rotation.z = z * degToRad;
+    console.log('[SceneManager] 宇宙组旋转偏移已更新:', { x, y, z });
+  }
+  
+  /**
    * 设置近邻超星系团渲染器
    */
   setNearbySuperclusterRenderer(renderer: any): void {
     if (this.nearbySuperclusterRenderer) {
-      this.scene.remove(this.nearbySuperclusterRenderer.getGroup());
+      this.universeGroup.remove(this.nearbySuperclusterRenderer.getGroup());
       this.nearbySuperclusterRenderer.dispose();
     }
     this.nearbySuperclusterRenderer = renderer;
     if (renderer) {
-      this.scene.add(renderer.getGroup());
+      // 添加到宇宙组，而不是直接添加到场景
+      this.universeGroup.add(renderer.getGroup());
     }
   }
   
@@ -822,12 +864,13 @@ export class SceneManager {
    */
   setObservableUniverseRenderer(renderer: any): void {
     if (this.observableUniverseRenderer) {
-      this.scene.remove(this.observableUniverseRenderer.getGroup());
+      this.universeGroup.remove(this.observableUniverseRenderer.getGroup());
       this.observableUniverseRenderer.dispose();
     }
     this.observableUniverseRenderer = renderer;
     if (renderer) {
-      this.scene.add(renderer.getGroup());
+      // 添加到宇宙组，而不是直接添加到场景
+      this.universeGroup.add(renderer.getGroup());
     }
   }
 

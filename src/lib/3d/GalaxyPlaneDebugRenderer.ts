@@ -2,6 +2,8 @@
  * GalaxyPlaneDebugRenderer.ts - 银河系平面调试渲染器
  * 
  * 显示银河系平面的圆盘，用于验证坐标系是否正确
+ * 蓝色圆圈代表外部星团坐标系中的银河系位置
+ * 注意：旋转由父容器（universeGroup）控制，不在这里设置
  */
 
 import * as THREE from 'three';
@@ -30,16 +32,17 @@ export class GalaxyPlaneDebugRenderer {
     
     // 创建半透明材质
     const material = new THREE.MeshBasicMaterial({
-      color: 0x4488ff,
+      color: 0x0088ff, // 更明显的蓝色
       transparent: true,
-      opacity: 0.2,
+      opacity: 0.3,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
     
     this.planeMesh = new THREE.Mesh(geometry, material);
     
-    // 应用与银河系相同的旋转
+    // 应用与银河系相同的基础旋转
+    // 注意：额外的旋转偏移由父容器（universeGroup）控制
     this.group.rotation.order = 'YXZ';
     this.group.rotation.x = cfg.rotationX * (Math.PI / 180);
     this.group.rotation.y = cfg.rotationY * (Math.PI / 180);
@@ -50,9 +53,9 @@ export class GalaxyPlaneDebugRenderer {
     // 添加边缘线圈
     const edgeGeometry = new THREE.RingGeometry(radiusAU * 0.99, radiusAU, 64);
     const edgeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x4488ff,
+      color: 0x0088ff, // 更明显的蓝色
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.6,
       side: THREE.DoubleSide,
     });
     const edgeMesh = new THREE.Mesh(edgeGeometry, edgeMaterial);
@@ -60,7 +63,8 @@ export class GalaxyPlaneDebugRenderer {
     
     console.log('[GalaxyPlaneDebugRenderer] 银河系平面圆盘已创建');
     console.log(`  半径: ${radiusAU.toExponential(2)} AU = 50,000 光年`);
-    console.log(`  旋转: X=${cfg.rotationX}°, Y=${cfg.rotationY}°, Z=${cfg.rotationZ}°`);
+    console.log(`  基础旋转: X=${cfg.rotationX}°, Y=${cfg.rotationY}°, Z=${cfg.rotationZ}°`);
+    console.log(`  注意: 额外的旋转偏移由父容器（universeGroup）控制`);
   }
 
   getGroup(): THREE.Group {

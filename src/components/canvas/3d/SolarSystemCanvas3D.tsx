@@ -36,6 +36,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 import ScaleRuler from './ScaleRuler';
 import DistanceDisplay from './DistanceDisplay';
 import SettingsMenu from '@/components/SettingsMenu';
+import { GalaxyReferenceDebugger } from '@/components/GalaxyReferenceDebugger';
 import { ORBIT_COLORS, SUN_LIGHT_CONFIG, ORBIT_CURVE_POINTS, SATELLITE_CONFIG, ORBIT_FADE_CONFIG, FAR_VIEW_CONFIG } from '@/lib/config/visualConfig';
 import { CAMERA_CONFIG } from '@/lib/config/cameraConfig';
 import { TextureManager } from '@/lib/3d/TextureManager';
@@ -1607,6 +1608,19 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           cameraController={cameraControllerRef.current} 
         />
       )}
+      
+      {/* 银河系参考系调试器 */}
+      <GalaxyReferenceDebugger 
+        initialRotation={{ x: 58.0, y: -21.0, z: 59.5 }}
+        onRotationChange={(x, y, z) => {
+          const sceneManager = sceneManagerRef.current;
+          if (sceneManager) {
+            // 旋转整个宇宙组（包含蓝色圆圈和所有外部星团）
+            sceneManager.setUniverseGroupRotationOffset(x, y, z);
+            console.log('🔧 已更新宇宙组旋转偏移（蓝色圆圈和外部星团一起旋转）:', { x, y, z });
+          }
+        }}
+      />
     </div>
   );
 }
