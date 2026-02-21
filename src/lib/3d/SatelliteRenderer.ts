@@ -156,7 +156,7 @@ export class SatelliteRenderer {
       sizeAttenuation: false, // 禁用距离衰减，保持固定像素大小
       transparent: true,
       opacity: satelliteConfig.rendering.opacity,
-      depthWrite: false,
+      depthWrite: true, // 启用深度写入,防止被地球遮挡
       depthTest: true,
       map: texture, // 使用圆形纹理
       alphaTest: 0.01, // 丢弃完全透明的像素
@@ -166,6 +166,7 @@ export class SatelliteRenderer {
     this.pointCloud = new THREE.Points(this.geometry, this.material);
     this.pointCloud.name = 'SatellitePointCloud';
     this.pointCloud.frustumCulled = true; // 启用视锥剔除
+    this.pointCloud.renderOrder = 999; // 设置高渲染顺序,确保在地球之后渲染
     
     // 初始化时隐藏点云，直到有数据才显示
     this.pointCloud.visible = false;
