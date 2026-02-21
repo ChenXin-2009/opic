@@ -256,25 +256,25 @@ input[type="date"].date-input-white::-webkit-clear-button {
 
 /* 明日方舟风格滚动条 - 卫星菜单 */
 .satellite-menu-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 8px !important;
 }
 
 .satellite-menu-scrollbar::-webkit-scrollbar-track {
-  background: #1a1a1a;
-  border-left: 1px solid #333333;
+  background: #1a1a1a !important;
+  border-left: 1px solid #333333 !important;
 }
 
 .satellite-menu-scrollbar::-webkit-scrollbar-thumb {
-  background: #333333;
-  border-left: 2px solid #1a1a1a;
+  background: #333333 !important;
+  border-left: 2px solid #1a1a1a !important;
 }
 
 .satellite-menu-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #ffffff;
+  background: #ffffff !important;
 }
 
 /* Firefox 滚动条样式 */
 .satellite-menu-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #333333 #1a1a1a;
+  scrollbar-width: thin !important;
+  scrollbar-color: #333333 #1a1a1a !important;
 }

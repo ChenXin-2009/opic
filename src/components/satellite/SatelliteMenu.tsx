@@ -79,6 +79,14 @@ export function SatelliteMenu({ lang = 'zh' }: SatelliteMenuProps) {
     return () => clearTimeout(timer);
   }, [localSearchQuery, setSearchQuery]);
 
+  // 组件加载时自动获取卫星数据
+  useEffect(() => {
+    // 只在没有数据时才自动获取
+    if (useSatelliteStore.getState().tleData.size === 0 && !loading) {
+      fetchSatellites();
+    }
+  }, []); // 空依赖数组,只在组件挂载时执行一次
+
   // 点击外部关闭菜单
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
