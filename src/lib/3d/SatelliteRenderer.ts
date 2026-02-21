@@ -132,15 +132,34 @@ export class SatelliteRenderer {
       new THREE.BufferAttribute(this.colorBuffer, 3)
     );
     
+    // 创建圆形纹理
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+    
+    // 绘制圆形渐变
+    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 64, 64);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    
     // 创建材质
     this.material = new THREE.PointsMaterial({
       size: satelliteConfig.rendering.pointSize,
       vertexColors: true,
-      sizeAttenuation: true,
+      sizeAttenuation: false, // 禁用距离衰减，保持固定像素大小
       transparent: true,
       opacity: satelliteConfig.rendering.opacity,
       depthWrite: false,
       depthTest: true,
+      map: texture, // 使用圆形纹理
+      alphaTest: 0.01, // 丢弃完全透明的像素
     });
     
     // 创建点云对象
@@ -228,6 +247,26 @@ export class SatelliteRenderer {
     // 显示点云
     this.pointCloud.visible = true;
     console.log('[SatelliteRenderer] Point cloud visible:', this.pointCloud.visible);
+  }
+  
+  /**
+   * 设置点云透明度
+   * 
+   * @param opacity - 透明度值 (0-1)
+   */
+  setOpacity(opacity: number): void {
+    this.material.opacity = Math.max(0, Math.min(1, opacity));
+    this.material.needsUpdate = true;
+  }
+  
+  /**
+   * 设置点的大小
+   * 
+   * @param size - 点大小（像素）
+   */
+  setSize(size: number): void {
+    this.material.size = Math.max(0.1, size);
+    this.material.needsUpdate = true;
   }
   
   /**

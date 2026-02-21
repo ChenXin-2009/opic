@@ -19,6 +19,7 @@ import { SatelliteRenderer } from './SatelliteRenderer';
 import { SGP4Calculator } from '../satellite/sgp4Calculator';
 import { useSolarSystemStore } from '../state';
 import { useSatelliteStore } from '../store/useSatelliteStore';
+import { satelliteConfig } from '../config/satelliteConfig';
 import * as THREE from 'three';
 
 /**
@@ -215,6 +216,36 @@ export class SatelliteLayer {
         });
         
         console.log('[SatelliteLayer] Calling renderer.updatePositions with', adjustedPositions.size, 'satellites');
+        
+        // 计算相机到地球的距离，并根据距离调整透明度和大小
+        const cameraPosition = this.sceneManager.getCamera().position;
+        const distanceToEarth = cameraPosition.distanceTo(earthPosition);
+        
+        // 距离阈值转换为AU
+        const threshold1 = 100000 / 149597870.7;   // 100千公里
+        const threshold2 = 350000 / 149597870.7;   // 350千公里
+        
+        // 根据距离分三个阶段调整透明度和大小
+        let opacity: number;
+        let size: number;
+        
+        if (distanceToEarth < threshold1) {
+          // 近距离：完全不透明，正常大小
+          opacity = 1.0;
+          size = satelliteConfig.rendering.pointSize;
+        } else if (distanceToEarth < threshold2) {
+          // 中距离：半透明，中等大小
+          opacity = 0.5;
+          size = 2.0;
+        } else {
+          // 远距离：半透明，小尺寸
+          opacity = 0.5;
+          size = 1.0;
+        }
+        
+        // 更新渲染器的透明度和大小
+        this.renderer.setOpacity(opacity);
+        this.renderer.setSize(size);
         
         // 更新渲染器的位置缓冲区
         this.renderer.updatePositions(adjustedPositions);
