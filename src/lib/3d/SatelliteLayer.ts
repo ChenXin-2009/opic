@@ -185,13 +185,24 @@ export class SatelliteLayer {
         console.log('[SatelliteLayer] SGP4 calculated', positions.size, 'positions');
         console.log('[SatelliteLayer] Earth position:', earthPosition.x, earthPosition.y, earthPosition.z);
         
-        // 将卫星位置从地心坐标转换为太阳系坐标
-        // 卫星位置 = 地球位置 + 相对于地心的位置
+        // 将卫星位置从地心坐标转换为太阳系坐标，并应用坐标系修正
+        // 卫星位置 = 地球位置 + 旋转(相对于地心的位置)
+        // 
+        // 坐标系修正：X轴旋转66.56度
+        // 原因：ECI坐标系的Z轴（北极）需要对齐到Three.js的赤道平面
+        // 66.56° = 90° - 23.44°（地轴倾角）
         const adjustedPositions = new Map<number, any>();
         
+        // 创建旋转矩阵：X轴旋转66.56度
+        const rotationMatrix = new THREE.Matrix4();
+        rotationMatrix.makeRotationX(THREE.MathUtils.degToRad(66.56));
+        
         positions.forEach((state, noradId) => {
-          // 将相对于地心的位置加上地球在太阳系中的位置
-          const adjustedPosition = state.position.clone().add(earthPosition);
+          // 应用旋转到相对位置
+          const rotatedPosition = state.position.clone().applyMatrix4(rotationMatrix);
+          
+          // 将旋转后的相对位置加上地球在太阳系中的位置
+          const adjustedPosition = rotatedPosition.add(earthPosition);
           
           console.log('[SatelliteLayer] Satellite', noradId, 
             'relative:', state.position.x, state.position.y, state.position.z,
