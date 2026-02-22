@@ -34,8 +34,6 @@ function SatelliteDetailModal({ lang = 'zh' }: SatelliteDetailModalProps) {
 
   // 模态框是否显示
   const isOpen = selectedSatellite !== null;
-  
-  console.log('[DEBUG] SatelliteDetailModal render - selectedSatellite:', selectedSatellite, 'isOpen:', isOpen);
 
   // 当前卫星的轨道是否显示
   const isOrbitVisible = selectedSatellite ? showOrbits.has(selectedSatellite) : false;

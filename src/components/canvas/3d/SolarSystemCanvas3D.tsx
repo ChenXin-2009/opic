@@ -1305,17 +1305,13 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
             const clickedSatelliteId = satelliteRenderer.raycast(raycasterRef.current, cameraToEarthDistance);
             
             if (clickedSatelliteId !== null) {
-              console.log('[DEBUG] Satellite clicked:', clickedSatelliteId);
               useSatelliteStore.getState().selectSatellite(clickedSatelliteId);
-              console.log('[DEBUG] Store updated, selectedSatellite:', useSatelliteStore.getState().selectedSatellite);
               
               // 重置拖动检测状态
               isDragging = false;
               mouseDownTime = 0;
               return; // 卫星点击优先,不再检测行星
             }
-          } else {
-            console.log('[DEBUG] Not in earth view. cameraToEarthDistance:', cameraToEarthDistance, 'threshold:', earthViewThreshold);
           }
         }
         
