@@ -78,6 +78,7 @@ export class SatelliteRenderer {
   // 卫星数据
   private satellites: Map<number, SatelliteState>;
   private selectedSatellite: number | null;
+  private hoveredSatellite: number | null;
   
   // 轨道曲线
   private orbitCurves: Map<number, OrbitLine>;
@@ -95,6 +96,7 @@ export class SatelliteRenderer {
     this.camera = sceneManager.getCamera();
     this.satellites = new Map();
     this.selectedSatellite = null;
+    this.hoveredSatellite = null;
     this.orbitCurves = new Map();
     this.orbitLinePool = []; // 初始化对象池
     
@@ -200,7 +202,6 @@ export class SatelliteRenderer {
    */
   updatePositions(satellites: Map<number, SatelliteState>): void {
     this.satellites = satellites;
-    let index = 0;
     
     // 如果没有卫星数据，隐藏点云
     if (satellites.size === 0) {
@@ -209,8 +210,17 @@ export class SatelliteRenderer {
       return;
     }
     
-    satellites.forEach((sat) => {
+    // 使用Array.from确保与raycast中的顺序一致
+    const noradIds = Array.from(satellites.keys());
+    let index = 0;
+    
+    noradIds.forEach((noradId) => {
       if (index >= MAX_SATELLITES) {
+        return;
+      }
+      
+      const sat = satellites.get(noradId);
+      if (!sat) {
         return;
       }
       
@@ -219,8 +229,15 @@ export class SatelliteRenderer {
       this.positionBuffer[index * 3 + 1] = sat.position.y;
       this.positionBuffer[index * 3 + 2] = sat.position.z;
       
-      // 更新颜色(根据轨道类型)
-      const color = this.getColorByOrbitType(sat.orbitType);
+      // 更新颜色(根据轨道类型和悬停状态)
+      let color = this.getColorByOrbitType(sat.orbitType);
+      
+      // 如果是悬停的卫星,使用高亮颜色(亮黄色)
+      // 注意:悬停状态优先级高于轨道类型颜色
+      if (this.hoveredSatellite === sat.noradId) {
+        color = new THREE.Color(1.0, 1.0, 0.5); // 亮黄色高亮
+      }
+      
       this.colorBuffer[index * 3] = color.r;
       this.colorBuffer[index * 3 + 1] = color.g;
       this.colorBuffer[index * 3 + 2] = color.b;
@@ -342,24 +359,27 @@ export class SatelliteRenderer {
    * 
    * 使用Three.js Raycaster检测鼠标点击的卫星。
    * 返回被点击卫星的NORAD ID。
+   * 根据相机距离动态调整阈值。
    * 
    * @param raycaster - Three.js射线投射器
+   * @param cameraDistance - 相机到地球的距离(AU),用于动态调整阈值
    * @returns 被点击卫星的NORAD ID，如果没有点击到卫星则返回null
    * 
    * @example
    * ```typescript
    * const raycaster = new THREE.Raycaster();
    * raycaster.setFromCamera(mouse, camera);
-   * const noradId = renderer.raycast(raycaster);
+   * const noradId = renderer.raycast(raycaster, 0.001);
    * if (noradId) {
    *   console.log('点击了卫星:', noradId);
    * }
    * ```
    */
-  raycast(raycaster: THREE.Raycaster): number | null {
-    // 设置射线投射器的点阈值(增加点击容差)
+  raycast(raycaster: THREE.Raycaster, cameraDistance?: number): number | null {
+    // 设置射线投射器的点阈值(屏幕空间像素)
+    // Three.js的Points阈值单位是像素,不是世界坐标
     raycaster.params.Points = raycaster.params.Points || {};
-    raycaster.params.Points.threshold = 0.1;
+    raycaster.params.Points.threshold = 15; // 15像素的点击容差
     
     const intersects = raycaster.intersectObject(this.pointCloud);
     
@@ -367,6 +387,7 @@ export class SatelliteRenderer {
       const index = intersects[0].index;
       if (index !== undefined) {
         // 从索引获取NORAD ID
+        // 确保使用与updatePositions相同的遍历顺序
         const noradIds = Array.from(this.satellites.keys());
         if (index < noradIds.length) {
           return noradIds[index];
@@ -538,6 +559,55 @@ export class SatelliteRenderer {
    */
   setSelectedSatellite(noradId: number | null): void {
     this.selectedSatellite = noradId;
+  }
+  
+  /**
+   * 设置悬停的卫星
+   * 
+   * 设置当前鼠标悬停的卫星，用于高亮显示。
+   * 
+   * @param noradId - 卫星NORAD ID，null表示没有悬停
+   */
+  setHoveredSatellite(noradId: number | null): void {
+    // 只有当悬停状态改变时才更新
+    if (this.hoveredSatellite !== noradId) {
+      this.hoveredSatellite = noradId;
+      
+      // 触发颜色更新
+      if (this.satellites.size > 0) {
+        // 使用Array.from确保与updatePositions和raycast中的顺序一致
+        const noradIds = Array.from(this.satellites.keys());
+        let index = 0;
+        
+        noradIds.forEach((satNoradId) => {
+          if (index >= MAX_SATELLITES) {
+            return;
+          }
+          
+          const sat = this.satellites.get(satNoradId);
+          if (!sat) {
+            return;
+          }
+          
+          // 更新颜色
+          let color = this.getColorByOrbitType(sat.orbitType);
+          
+          // 如果是悬停的卫星,使用高亮颜色
+          if (this.hoveredSatellite === sat.noradId) {
+            color = new THREE.Color(1.0, 1.0, 0.5); // 亮黄色高亮
+          }
+          
+          this.colorBuffer[index * 3] = color.r;
+          this.colorBuffer[index * 3 + 1] = color.g;
+          this.colorBuffer[index * 3 + 2] = color.b;
+          
+          index++;
+        });
+        
+        // 标记颜色缓冲区需要更新
+        this.geometry.attributes.color.needsUpdate = true;
+      }
+    }
   }
   
   /**

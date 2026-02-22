@@ -139,7 +139,6 @@ export default function CelestialSearch({
       };
 
       searchIndex.buildFromStore(store, renderers);
-      console.log(`搜索索引已构建，包含 ${searchIndex.size()} 个天体`);
 
       // 创建搜索引擎
       const searchEngine = new SearchEngine(searchIndex);
@@ -224,8 +223,6 @@ export default function CelestialSearch({
       const startTime = Date.now();
       const results = searchEngineRef.current.search(query, MAX_SEARCH_RESULTS);
       const searchTime = Date.now() - startTime;
-
-      console.log(`搜索 "${query}" 完成，耗时 ${searchTime}ms，找到 ${results.length} 个结果`);
 
       setState((prev) => ({
         ...prev,
@@ -338,7 +335,6 @@ export default function CelestialSearch({
     }
 
     try {
-      console.log('检测到天体数据变化，重建搜索索引...');
 
       // 获取渲染器实例
       const renderers = {
@@ -350,11 +346,9 @@ export default function CelestialSearch({
 
       // 重建索引
       searchIndexRef.current.buildFromStore(store, renderers);
-      console.log(`搜索索引已更新，包含 ${searchIndexRef.current.size()} 个天体`);
 
       // 更新搜索引擎的索引
       searchEngineRef.current.updateIndex(searchIndexRef.current);
-      console.log('搜索引擎索引已更新');
 
       // 如果当前有搜索查询，重新执行搜索以更新结果
       if (state.query.trim()) {
@@ -403,8 +397,6 @@ export default function CelestialSearch({
         isLoading: false,
         showHistory: false,
       });
-
-      console.log(`已导航到 ${result.name}`);
     } catch (error) {
       console.error('导航失败:', error);
       // 保持搜索框打开，显示错误提示

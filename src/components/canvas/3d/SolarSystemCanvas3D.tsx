@@ -20,6 +20,7 @@
 
 import React, { useRef, useLayoutEffect, useState } from 'react';
 import { useSolarSystemStore } from '@/lib/state';
+import { useSatelliteStore } from '@/lib/store/useSatelliteStore';
 import { SceneManager } from '@/lib/3d/SceneManager';
 import { CameraController } from '@/lib/3d/CameraController';
 import { Planet } from '@/lib/3d/Planet';
@@ -49,6 +50,7 @@ import { LaniakeaSuperclusterRenderer } from '@/lib/3d/LaniakeaSuperclusterRende
 import { SatelliteLayer } from '@/lib/3d/SatelliteLayer';
 import { UniverseScale } from '@/lib/types/universeTypes';
 import type { LocalGroupGalaxy, GalaxyGroup, SimpleGalaxy, GalaxyCluster, Supercluster } from '@/lib/types/universeTypes';
+import SatelliteDetailModal from '@/components/satellite/SatelliteDetailModal';
 
 // ==================== 可调参数配置 ====================
 // ⚙️ 以下参数可在文件顶部调整，影响 3D 场景显示效果
@@ -230,6 +232,10 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const satelliteLayerRef = useRef<SatelliteLayer | null>(null);
+  
+  // 卫星跟随状态跟踪
+  const isTrackingSatelliteRef = useRef<boolean>(false);
+  const lastFollowTargetRef = useRef<number | null>(null);
   
   // 标签重叠检测节流：每3帧执行一次（约20fps），减少CPU占用
   const labelUpdateFrameCounterRef = useRef<number>(0);
@@ -640,6 +646,74 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           // 播放时使用较低的阻尼以获得敏捷的跟踪
           // 非播放时使用配置文件中的阻尼值以保留平滑的交互感
           controls.dampingFactor = state.isPlaying ? 0.02 : CAMERA_CONFIG.dampingFactor;
+        }
+
+        // 卫星相机跟随逻辑：监听Store中的cameraFollowTarget状态
+        const satelliteStore = useSatelliteStore.getState();
+        const followTarget = satelliteStore.cameraFollowTarget;
+        
+        if (followTarget && cameraControllerRef.current && satelliteLayerRef.current) {
+          // 获取卫星的实时状态
+          const satelliteState = satelliteStore.satellites.get(followTarget);
+          
+          if (satelliteState) {
+            // 检查是否是新的跟随目标
+            const isNewTarget = lastFollowTargetRef.current !== followTarget;
+            
+            if (isNewTarget) {
+              // 创建跟踪函数,用于获取卫星的实时位置
+              const trackingTargetGetter = () => {
+                const currentState = useSatelliteStore.getState().satellites.get(followTarget);
+                if (currentState) {
+                  return new THREE.Vector3(
+                    currentState.position.x,
+                    currentState.position.y,
+                    currentState.position.z
+                  );
+                }
+                // 如果找不到卫星,返回当前位置
+                return new THREE.Vector3(
+                  satelliteState.position.x,
+                  satelliteState.position.y,
+                  satelliteState.position.z
+                );
+              };
+              
+              // 获取TLE数据以确定卫星类型
+              const tleData = satelliteStore.tleData.get(followTarget);
+              const satelliteRadius = 0.0001; // 卫星半径很小,约100km转换为AU
+              
+              const celestialObject = {
+                name: tleData?.name || `Satellite ${followTarget}`,
+                radius: satelliteRadius,
+                type: 'satellite' as const
+              };
+              
+              const targetPosition = new THREE.Vector3(
+                satelliteState.position.x,
+                satelliteState.position.y,
+                satelliteState.position.z
+              );
+              
+              // 使用CameraController的focusOnTarget方法
+              cameraControllerRef.current.focusOnTarget(
+                targetPosition,
+                celestialObject,
+                trackingTargetGetter,
+                { distance: 0.001 } // 卫星跟随距离较近
+              );
+              
+              // 更新跟踪状态
+              isTrackingSatelliteRef.current = true;
+              lastFollowTargetRef.current = followTarget;
+            }
+          }
+        } else {
+          // 如果没有跟随目标,重置跟踪标记
+          if (isTrackingSatelliteRef.current) {
+            isTrackingSatelliteRef.current = false;
+            lastFollowTargetRef.current = null;
+          }
         }
 
         // 计算相机到最近行星的距离，用于所有轨道的渐隐
@@ -1124,8 +1198,9 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         mouseDownTime = Date.now();
       };
       
-      // 处理鼠标移动（检测拖动）
+      // 处理鼠标移动（检测拖动和卫星悬停）
       const handleMouseMove = (event: MouseEvent) => {
+        // 检测拖动
         if (mouseDownTime > 0) {
           const deltaX = event.clientX - mouseDownPosition.x;
           const deltaY = event.clientY - mouseDownPosition.y;
@@ -1135,15 +1210,54 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
             isDragging = true;
           }
         }
+        
+        // 检测卫星悬停(仅在地球视角下启用)
+        if (!containerRef.current || !raycasterRef.current || !sceneManagerRef.current) return;
+        
+        const camera = sceneManagerRef.current.getCamera();
+        const currentBodies = useSolarSystemStore.getState().celestialBodies;
+        const earthBody = currentBodies.find((b: any) => b.name.toLowerCase() === 'earth');
+        
+        if (earthBody) {
+          const earthPosition = new THREE.Vector3(earthBody.x, earthBody.y, earthBody.z);
+          const cameraToEarthDistance = camera.position.distanceTo(earthPosition);
+          const earthViewThreshold = 0.01; // AU, 约150万公里
+          
+          if (cameraToEarthDistance < earthViewThreshold && satelliteLayerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            raycasterRef.current.setFromCamera(mouseRef.current, camera);
+            
+            const satelliteRenderer = satelliteLayerRef.current.getRenderer();
+            const hoveredSatelliteId = satelliteRenderer.raycast(raycasterRef.current, cameraToEarthDistance);
+            
+            // 更新悬停状态
+            useSatelliteStore.getState().setHoveredSatellite(hoveredSatelliteId);
+            
+            // 更新渲染器的悬停状态
+            satelliteRenderer.setHoveredSatellite(hoveredSatelliteId);
+          } else {
+            // 离开地球视角时清除悬停状态
+            useSatelliteStore.getState().setHoveredSatellite(null);
+            if (satelliteLayerRef.current) {
+              satelliteLayerRef.current.getRenderer().setHoveredSatellite(null);
+            }
+          }
+        } else {
+          // 找不到地球时清除悬停状态
+          useSatelliteStore.getState().setHoveredSatellite(null);
+          if (satelliteLayerRef.current) {
+            satelliteLayerRef.current.getRenderer().setHoveredSatellite(null);
+          }
+        }
       };
       
       // 处理鼠标抬起（重置拖动状态）
       const handleMouseUp = () => {
-        // 延迟重置，确保 click 事件能正确检测到拖动状态
-        setTimeout(() => {
-          isDragging = false;
-          mouseDownTime = 0;
-        }, 10);
+        // 不立即重置,让click事件先处理
+        // isDragging和mouseDownTime会在click事件中使用后自动失效
       };
       
       // 处理鼠标点击（聚焦到行星）
@@ -1152,14 +1266,18 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         
         // 如果是拖动操作，不执行聚焦
         if (isDragging) {
-          console.log('Click ignored: detected as drag operation');
+          // 重置拖动状态
+          isDragging = false;
+          mouseDownTime = 0;
           return;
         }
         
         // 如果是长按操作，不执行聚焦
         const clickDuration = Date.now() - mouseDownTime;
         if (clickDuration > clickTimeThreshold) {
-          console.log('Click ignored: detected as long press');
+          // 重置状态
+          isDragging = false;
+          mouseDownTime = 0;
           return;
         }
         
@@ -1170,9 +1288,39 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         const camera = sceneManagerRef.current.getCamera();
         raycasterRef.current.setFromCamera(mouseRef.current, camera);
         
+        // 获取当前天体列表
+        const currentBodies = useSolarSystemStore.getState().celestialBodies;
+        
+        // 检测卫星点击(仅在地球视角下启用)
+        // 计算相机到地球的距离,而不是到太阳的距离
+        const earthBody = currentBodies.find((b: any) => b.name.toLowerCase() === 'earth');
+        
+        if (earthBody) {
+          const earthPosition = new THREE.Vector3(earthBody.x, earthBody.y, earthBody.z);
+          const cameraToEarthDistance = camera.position.distanceTo(earthPosition);
+          const earthViewThreshold = 0.01; // AU, 约150万公里
+          
+          if (cameraToEarthDistance < earthViewThreshold && satelliteLayerRef.current) {
+            const satelliteRenderer = satelliteLayerRef.current.getRenderer();
+            const clickedSatelliteId = satelliteRenderer.raycast(raycasterRef.current, cameraToEarthDistance);
+            
+            if (clickedSatelliteId !== null) {
+              console.log('[DEBUG] Satellite clicked:', clickedSatelliteId);
+              useSatelliteStore.getState().selectSatellite(clickedSatelliteId);
+              console.log('[DEBUG] Store updated, selectedSatellite:', useSatelliteStore.getState().selectedSatellite);
+              
+              // 重置拖动检测状态
+              isDragging = false;
+              mouseDownTime = 0;
+              return; // 卫星点击优先,不再检测行星
+            }
+          } else {
+            console.log('[DEBUG] Not in earth view. cameraToEarthDistance:', cameraToEarthDistance, 'threshold:', earthViewThreshold);
+          }
+        }
+        
         // 检测所有行星（包括标记圈和标签）
         const intersects: Array<{ planet: Planet; body: any; distance: number; type: 'mesh' | 'marker' | 'label'; isSatellite: boolean }> = [];
-        const currentBodies = useSolarSystemStore.getState().celestialBodies;
         
         // 检测所有天体：行星和卫星
         currentBodies.forEach((body: any) => {
@@ -1270,9 +1418,32 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           const markerOrLabelClick = intersects.find(i => i.type === 'marker' || i.type === 'label');
           
           // 如果没有标记圈或标签点击，检查是否有星球网格的直接点击
-          const meshClick = intersects.find(i => i.type === 'mesh');
+          // 但要确保该行星在屏幕上足够大，避免误触远处的小行星
+          let meshClick = intersects.find(i => i.type === 'mesh');
           
-          // 只有在点击了标记圈、标签或星球网格时才聚焦
+          // 对于网格点击，检查行星在屏幕上的视觉大小
+          if (meshClick && !markerOrLabelClick && containerRef.current) {
+            const planetWorldPos = new THREE.Vector3(meshClick.body.x, meshClick.body.y, meshClick.body.z);
+            const distanceToCamera = camera.position.distanceTo(planetWorldPos);
+            const planetRadius = meshClick.planet.getRealRadius();
+            
+            // 计算行星在屏幕上的视觉角度大小（弧度）
+            const angularSize = 2 * Math.atan(planetRadius / distanceToCamera);
+            
+            // 计算行星在屏幕上的像素大小
+            const fov = camera.fov * (Math.PI / 180); // 转换为弧度
+            const screenHeight = containerRef.current.clientHeight;
+            const pixelSize = (angularSize / fov) * screenHeight;
+            
+            // 只有当行星在屏幕上的大小超过阈值时才接受网格点击
+            // 阈值设置为30像素，避免误触远处的小行星
+            const minPixelSize = 30;
+            if (pixelSize < minPixelSize) {
+              meshClick = undefined;
+            }
+          }
+          
+          // 只有在点击了标记圈、标签或足够大的星球网格时才聚焦
           const target = markerOrLabelClick || meshClick;
           
           if (target) {
@@ -1315,6 +1486,10 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           }
           // 如果没有有效的点击目标（比如点击了空白区域），不执行任何操作
         }
+        
+        // 重置拖动检测状态
+        isDragging = false;
+        mouseDownTime = 0;
       };
       
       // 使用已经声明的 renderer 变量
@@ -1497,6 +1672,9 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           }}
         />
       )}
+      
+      {/* 卫星详情模态框 */}
+      <SatelliteDetailModal lang={lang} />
     </div>
   );
 }

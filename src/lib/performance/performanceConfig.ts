@@ -86,9 +86,7 @@ export function isProduction(): boolean {
  * ```
  */
 export function logDebug(message: string, ...args: any[]): void {
-  if (isDevelopment()) {
-    console.log(message, ...args);
-  }
+  // 性能日志已禁用
 }
 
 /**

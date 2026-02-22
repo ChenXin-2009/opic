@@ -54,6 +54,8 @@ export interface SatelliteStore {
   hoveredSatellite: number | null;
   /** 显示轨道的卫星NORAD ID集合 */
   showOrbits: Set<number>;
+  /** 相机跟随目标卫星NORAD ID */
+  cameraFollowTarget: number | null;
 
   // ========== UI状态 ==========
   /** 是否显示卫星图层 */
@@ -86,6 +88,8 @@ export interface SatelliteStore {
   updateSatelliteState: (noradId: number, state: SatelliteState) => void;
   /** 批量更新卫星状态 */
   updateSatelliteStates: (states: Map<number, SatelliteState>) => void;
+  /** 设置相机跟随目标 */
+  setCameraFollowTarget: (noradId: number | null) => void;
 }
 
 // ============ 持久化配置 ============
@@ -138,6 +142,7 @@ export const useSatelliteStore = create<SatelliteStore>()(
       selectedSatellite: null,
       hoveredSatellite: null,
       showOrbits: new Set(),
+      cameraFollowTarget: null,
       showSatellites: true,
       showInfoPanel: false,
 
@@ -354,6 +359,13 @@ export const useSatelliteStore = create<SatelliteStore>()(
        */
       updateSatelliteStates: (states: Map<number, SatelliteState>) => {
         set({ satellites: new Map(states) });
+      },
+
+      /**
+       * 设置相机跟随目标
+       */
+      setCameraFollowTarget: (noradId: number | null) => {
+        set({ cameraFollowTarget: noradId });
       },
     }),
     {

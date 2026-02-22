@@ -319,11 +319,20 @@ export class SatelliteLayer {
             category: state.category,
             altitude: state.altitude,
             orbitalElements: state.orbitalElements,
+            velocity: state.velocity,
+            position: state.position,
           });
           
           // 设置插值目标（使用模拟时间）
           this.interpolator.setTarget(noradId, state.position.clone(), nextCalcTime);
         });
+        
+        // 同步到Store（供详情面板使用）
+        const storeUpdate = new Map();
+        this.satelliteStates.forEach((state, noradId) => {
+          storeUpdate.set(noradId, state);
+        });
+        useSatelliteStore.getState().updateSatelliteStates(storeUpdate);
         
         // 设置下次计算时间
         this.nextCalculationTime = nextCalcTime;

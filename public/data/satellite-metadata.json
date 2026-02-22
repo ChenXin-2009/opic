@@ -1,0 +1,22 @@
+{
+  "25544": {
+    "noradId": 25544,
+    "name": "ISS (ZARYA)",
+    "country": "International",
+    "owner": "NASA/ROSCOSMOS/ESA/JAXA/CSA",
+    "operator": "NASA/ROSCOSMOS/ESA/JAXA/CSA",
+    "users": "Government",
+    "purpose": "Space Station",
+    "launchDate": "1998-11-20",
+    "launchSite": "Baikonur Cosmodrome",
+    "launchVehicle": "Proton-K",
+    "launchMass": 419725,
+    "power": 120000,
+    "expectedLifetime": "30+",
+    "contractor": "Multiple",
+    "contractorCountry": "International",
+    "cosparId": "1998-067A",
+    "orbitClass": "LEO",
+    "orbitType": "Inclined"
+  }
+}

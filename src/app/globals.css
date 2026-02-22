@@ -254,6 +254,46 @@ input[type="date"].date-input-white::-webkit-clear-button {
   }
 }
 
+/* 模态框缩放动画 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 右侧滑入动画 */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 模态框动画工具类 */
+.animate-scaleIn {
+  animation: scaleIn 200ms ease-out forwards;
+  will-change: opacity, transform;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 250ms ease-out forwards;
+  will-change: opacity, transform;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 200ms ease-out forwards;
+  will-change: opacity, transform;
+}
+
 /* 明日方舟风格滚动条 - 卫星菜单 */
 .satellite-menu-scrollbar::-webkit-scrollbar {
   width: 8px !important;

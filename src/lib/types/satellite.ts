@@ -279,3 +279,68 @@ export interface WorkerResponse {
     errors?: string[];
   };
 }
+
+// ============ 卫星详情数据模型 ============
+
+/**
+ * 卫星详情数据
+ * 包含基本信息、轨道参数、实时数据、物理特性、发射信息和任务信息
+ */
+export interface SatelliteDetailData {
+  /** NORAD ID */
+  noradId: number;
+
+  /** 基本信息 */
+  basicInfo: {
+    name: string;
+    noradId: number;
+    cosparId?: string;  // COSPAR ID (国际编号)
+    country?: string;   // 所属国家
+    owner?: string;     // 所有者/运营商
+    category: SatelliteCategory;
+  };
+
+  /** 轨道参数(从TLE计算) */
+  orbitalParameters: {
+    semiMajorAxis: number;      // 半长轴(km)
+    eccentricity: number;       // 偏心率
+    inclination: number;        // 倾角(度)
+    raan: number;               // 升交点赤经(度)
+    argumentOfPerigee: number;  // 近地点幅角(度)
+    meanAnomaly: number;        // 平近点角(度)
+    period: number;             // 轨道周期(分钟)
+    apogee: number;             // 远地点高度(km)
+    perigee: number;            // 近地点高度(km)
+  };
+
+  /** 实时位置数据(动态) */
+  realTimeData: {
+    latitude: number;   // 纬度(度)
+    longitude: number;  // 经度(度)
+    altitude: number;   // 高度(km)
+    velocity: number;   // 速度(km/s)
+    distance: number;   // 距离观察者(km)
+  };
+
+  /** 物理特性(可选) */
+  physicalProperties?: {
+    rcs?: number;       // 雷达截面积(m²)
+    mass?: number;      // 质量(kg)
+    size?: string;      // 尺寸描述
+  };
+
+  /** 发射信息(可选) */
+  launchInfo?: {
+    launchDate?: string;    // 发射日期
+    launchSite?: string;    // 发射场
+    launchVehicle?: string; // 运载火箭
+  };
+
+  /** 任务信息(可选) */
+  missionInfo?: {
+    type?: string;          // 卫星类型
+    purpose?: string;       // 任务描述
+    operator?: string;      // 操作者
+    expectedLifetime?: string; // 预期寿命
+  };
+}
