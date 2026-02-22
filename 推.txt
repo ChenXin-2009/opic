@@ -8,9 +8,9 @@
 ==================
 git status
 git add .
-git commit -m "Release 6.2.0: 优化时间精度"
+git commit -m "Release 6.2.1: 修bug"
 git checkout main
 git pull origin main
-git tag v6.2.0
+git tag v6.2.1
 git push origin main
-git push origin v6.2.0
+git push origin v6.2.1

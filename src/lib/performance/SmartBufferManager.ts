@@ -275,16 +275,9 @@ export class SmartBufferManager {
     const positionAttribute = this.geometry.getAttribute('position') as BufferAttribute;
     const colorAttribute = this.geometry.getAttribute('color') as BufferAttribute;
     
-    // 设置更新范围
-    positionAttribute.updateRange = {
-      offset: minIndex * 3,
-      count: (maxIndex - minIndex + 1) * 3
-    };
-    
-    colorAttribute.updateRange = {
-      offset: minIndex * 3,
-      count: (maxIndex - minIndex + 1) * 3
-    };
+    // 设置更新范围（使用 addUpdateRange 方法）
+    positionAttribute.addUpdateRange(minIndex * 3, (maxIndex - minIndex + 1) * 3);
+    colorAttribute.addUpdateRange(minIndex * 3, (maxIndex - minIndex + 1) * 3);
     
     // 标记需要更新
     positionAttribute.needsUpdate = true;
