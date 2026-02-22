@@ -379,7 +379,7 @@ export class SatelliteRenderer {
     // 设置射线投射器的点阈值(屏幕空间像素)
     // Three.js的Points阈值单位是像素,不是世界坐标
     raycaster.params.Points = raycaster.params.Points || {};
-    raycaster.params.Points.threshold = 15; // 15像素的点击容差
+    raycaster.params.Points.threshold = 0.0000001; // 极小的点击容差,只检测非常接近的点
     
     const intersects = raycaster.intersectObject(this.pointCloud);
     

@@ -8,7 +8,7 @@
 ==================
 git status
 git add .
-git commit -m "Release 6.3.0: 添加卫星信息"
+git commit -m "Release 6.3.0: 点击卫星显示信息"
 git checkout main
 git pull origin main
 git tag v6.3.0
