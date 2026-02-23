@@ -44,6 +44,13 @@ next-env.d.ts
 # quality reports
 /reports
 
-测试-勿删.bat
-推-勿删.txt
-回滚-勿删.txt
+测试.bat
+推.txt
+
+# IDE configurations
+.kiro/
+.vscode/
+
+# 根目录临时文件
+/*.txt
+/*.bat

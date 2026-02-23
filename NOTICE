@@ -1,0 +1,95 @@
+SoMap - Solar System Real-time Map
+Copyright 2025 github.com/ChenXin-2009
+
+This product includes software developed at:
+- Project Repository: https://github.com/ChenXin-2009/somap
+
+================================================================================
+
+This software uses the following third-party data and resources:
+
+Astronomical Data:
+- NASA JPL Ephemeris Data (DE440, JUP365, SAT441, NEP097)
+  Source: NASA Jet Propulsion Laboratory
+  https://ssd.jpl.nasa.gov/
+
+- ESA Gaia Mission Data Release 3 (DR3)
+  Source: European Space Agency
+  https://www.cosmos.esa.int/web/gaia
+
+- McConnachie (2012) Local Group Catalog
+  Source: Astronomical Journal
+
+- Karachentsev et al. (2013) Nearby Galaxies Catalog
+  Source: Astronomical Journal
+
+- 2MASS Redshift Survey (2MRS)
+  Source: 2MASS Project
+
+- Cosmicflows-3 Dataset
+  Source: Tully et al. (2016)
+
+Visual Resources:
+- Planetary Textures
+  Source: Solar System Scope
+  https://www.solarsystemscope.com/textures/
+
+- Galaxy Images
+  Source: ESA/Gaia
+  https://www.esa.int/ESA_Multimedia/Images
+
+Satellite Data:
+- Two-Line Element (TLE) Data
+  Source: CelesTrak (NORAD)
+  https://celestrak.org/
+
+- UCS Satellite Database
+  Source: Union of Concerned Scientists
+  https://www.ucsusa.org/resources/satellite-database
+
+================================================================================
+
+This software includes the following open source components:
+
+- Next.js (MIT License)
+  Copyright (c) 2024 Vercel, Inc.
+  https://github.com/vercel/next.js
+
+- React (MIT License)
+  Copyright (c) Meta Platforms, Inc. and affiliates.
+  https://github.com/facebook/react
+
+- Three.js (MIT License)
+  Copyright (c) 2010-2024 three.js authors
+  https://github.com/mrdoob/three.js
+
+- satellite.js (MIT License)
+  Copyright (c) 2013 Shashwat Kandadai and UCSC
+  https://github.com/shashwatak/satellite-js
+
+- Zustand (MIT License)
+  Copyright (c) 2019 Paul Henschel
+  https://github.com/pmndrs/zustand
+
+- react-markdown (MIT License)
+  Copyright (c) 2015 Espen Hovlandsdal
+  https://github.com/remarkjs/react-markdown
+
+For a complete list of dependencies and their licenses, see package.json
+
+================================================================================
+
+DISCLAIMER:
+
+This software is provided for educational and entertainment purposes only.
+While we strive for data accuracy, we do not guarantee the absolute precision
+of all astronomical data and calculations.
+
+This software is not suitable for use in safety-critical environments such as
+nuclear facilities, aircraft navigation or communication systems, air traffic
+control, life support machines, or weapons systems, where software failure
+could directly lead to death, personal injury, or severe physical or
+environmental damage.
+
+Users expressly understand and agree that the authors are not liable for any
+losses or damages resulting from the use of this software in high-risk activities.

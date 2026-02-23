@@ -25,6 +25,8 @@
     "pako": "^2.1.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "satellite.js": "^6.0.2",
     "three": "^0.170.0",
     "zustand": "^5.0.8"
