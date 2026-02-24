@@ -31,7 +31,7 @@ import { ArknightsVisualsProps } from './types';
  */
 export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps) {
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden pointer-events-none">
       {/* Top-left large triangle - using CSS border technique */}
       <div 
         className="absolute top-0 left-0 w-0 h-0 

@@ -109,7 +109,7 @@ const initializeBodies = (): Record<BodyKey, BodyEphemerisConfig> => {
   
   for (const key of Object.keys(BODY_IDS) as BodyKey[]) {
     bodies[key] = {
-      enabled: false,  // 默认关闭,使用解析模型
+      enabled: key === 'moon',  // 月球默认启用，其他默认关闭
       status: LoadingStatus.NOT_LOADED,
     };
   }

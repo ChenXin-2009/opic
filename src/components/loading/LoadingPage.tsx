@@ -15,6 +15,8 @@
 
 import { useState, useEffect } from 'react';
 import ArknightsVisuals from './ArknightsVisuals';
+import LoadingLogs from './LoadingLogs';
+import DataStreamPanel from './DataStreamPanel';
 import { useResourceLoader } from './useResourceLoader';
 import { useMinimumDisplayTime } from './useMinimumDisplayTime';
 import type { LoadingPageProps } from './types';
@@ -127,8 +129,20 @@ export default function LoadingPage({
         {isFadingOut ? "加载完成" : "正在加载页面资源，请稍候..."}
       </span>
 
-      {/* Arknights-style visual elements (Requirements 1.3, 1.4, 2.1-2.6) */}
-      <ArknightsVisuals isAnimating={!isFadingOut} />
+      {/* Arknights-style visual elements (Requirements 1.3, 1.4, 2.1-2.6) - 底层 */}
+      <div className="absolute inset-0" style={{ zIndex: 1 }}>
+        <ArknightsVisuals isAnimating={!isFadingOut} />
+      </div>
+
+      {/* 科幻风格加载日志背景 - 左侧 */}
+      <div className="absolute inset-0" style={{ zIndex: 2 }}>
+        <LoadingLogs isAnimating={!isFadingOut} />
+      </div>
+
+      {/* 数据流面板 - 右侧 */}
+      <div className="absolute inset-0" style={{ zIndex: 2 }}>
+        <DataStreamPanel isAnimating={!isFadingOut} />
+      </div>
     </div>
   );
 }
