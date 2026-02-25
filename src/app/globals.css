@@ -213,6 +213,16 @@ input[type="date"].date-input-white::-webkit-clear-button {
   }
 }
 
+/* 呼吸动画 - 用于光晕缓动放大缩小 */
+@keyframes breathe {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
 /* 淡出动画工具类 */
 .animate-fadeOut {
   animation: fadeOut 400ms ease-out forwards;

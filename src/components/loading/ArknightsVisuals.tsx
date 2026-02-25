@@ -11,9 +11,8 @@
 
 import { ArknightsVisualsProps } from './types';
 import HalftoneGradient from './HalftoneGradient';
-import OrbitalSystem from './DecorativeOrbits';
 
-export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps) {
+export default function ArknightsVisuals({ isAnimating, isComplete = false }: ArknightsVisualsProps) {
   // ==================== 配色方案 ====================
   // 冷钢蓝色系 - 从浅到深的9个层次
   // 注意：使用纯hex颜色（不带透明度），避免与黑色背景叠加后变暗
@@ -33,7 +32,7 @@ export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps)
     <div className="relative w-full h-full overflow-hidden pointer-events-none">
       
       {/* ==================== 底部半色调网点渐变（Canvas实现） ==================== */}
-      <HalftoneGradient colors={colors} />
+      <HalftoneGradient colors={colors} isComplete={isComplete} />
       
       {/* ==================== 装饰性几何元素 ==================== */}
       
@@ -72,13 +71,12 @@ export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps)
             style={{
               top: '50%',
               left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '900px',   // 增大到 900px（接近整个屏幕高度）
+              transform: isComplete ? 'translate(-50%, -50%) scale(0)' : 'translate(-50%, -50%)',
+              transition: isComplete ? 'transform 1500ms cubic-bezier(0.32, 0, 0.67, 0), opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)' : 'none',
+              width: '900px',
               height: '900px',
               backgroundColor: '#000000',
-              // 多层box-shadow实现光环效果：
-              // 从圆的边缘向外扩散，形成光晕
-              // 进一步增大扩散范围，让光晕覆盖更大区域
+              opacity: isComplete ? 0 : 1,
               boxShadow: `
                 0 0 60px 30px rgba(222, 244, 233, 0.9),
                 0 0 120px 60px ${colors.lightest}dd,
@@ -111,8 +109,9 @@ export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps)
               height="900" 
               className="absolute inset-0"
               style={{ 
-                opacity: 0.15,  // 降低不透明度，让噪点更淡
+                opacity: isComplete ? 0 : 0.15,
                 borderRadius: '50%',
+                transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
               }}
             >
               <defs>
@@ -169,8 +168,9 @@ export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps)
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                opacity: 0.35,  // 调整整体不透明度
-                mixBlendMode: 'screen',  // 使用屏幕混合模式
+                opacity: isComplete ? 0 : 0.35,
+                mixBlendMode: 'screen',
+                transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
               }}
             >
               <defs>
@@ -225,13 +225,23 @@ export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps)
         {/* ========== LOADING文字 ========== */}
         <div 
           className="text-sm font-light tracking-wider relative z-10"
-          style={{ color: colors.standard }}
+          style={{ 
+            color: colors.standard,
+            opacity: isComplete ? 0 : 1,
+            transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
+          }}
         >
           LOADING
         </div>
         
         {/* ========== 进度条 ========== */}
-        <div className="w-full max-w-xs relative z-10">
+        <div 
+          className="w-full max-w-xs relative z-10"
+          style={{
+            opacity: isComplete ? 0 : 1,
+            transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
+          }}
+        >
           {/* 进度条背景轨道 */}
           <div 
             className="relative h-1 overflow-hidden"
@@ -261,7 +271,13 @@ export default function ArknightsVisuals({ isAnimating }: ArknightsVisualsProps)
         </div>
         
         {/* ========== 加载动画点 ========== */}
-        <div className="flex gap-1.5 mt-2 relative z-10">
+        <div 
+          className="flex gap-1.5 mt-2 relative z-10"
+          style={{
+            opacity: isComplete ? 0 : 1,
+            transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
+          }}
+        >
           <div 
             className="w-1.5 h-1.5 rounded-full animate-pulse" 
             style={{ 

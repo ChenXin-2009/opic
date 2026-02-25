@@ -91,6 +91,9 @@ export interface MinimumDisplayTimeResult {
 export interface ArknightsVisualsProps {
   /** Whether animations should be playing */
   isAnimating: boolean;
+  
+  /** Whether loading is complete and exit animation should play */
+  isComplete?: boolean;
 }
 
 /**

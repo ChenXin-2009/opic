@@ -57,6 +57,9 @@ export default function LoadingPage({
   // Track fade-out animation state
   const [isFadingOut, setIsFadingOut] = useState(false);
   
+  // Track page fade-out (after element animations complete)
+  const [isPageFadingOut, setIsPageFadingOut] = useState(false);
+  
   // Monitor resource loading status (Requirement 3.1, 3.5, 7.5)
   const { isReady: isResourcesReady, wasCached } = useResourceLoader();
   
@@ -80,8 +83,13 @@ export default function LoadingPage({
     const isLoadingComplete = isResourcesReady && isMinTimeElapsed;
 
     if (isLoadingComplete && !isFadingOut) {
-      // Start fade-out animation (Requirement 5.1)
+      // Start element exit animations (Requirement 5.1)
       setIsFadingOut(true);
+      
+      // Delay page fade-out until element animations complete (1500ms + 200ms buffer)
+      setTimeout(() => {
+        setIsPageFadingOut(true);
+      }, 1700);
     }
   }, [isResourcesReady, isMinTimeElapsed, isFadingOut, wasCached, effectiveMinTime]);
 
@@ -90,7 +98,7 @@ export default function LoadingPage({
    * Triggered when fade-out animation completes (Requirement 5.4)
    */
   const handleAnimationEnd = () => {
-    if (isFadingOut) {
+    if (isPageFadingOut) {
       // Remove component from DOM after fade-out completes
       // Add 'loaded' class to body to show main content
       document.body.classList.add('loaded');
@@ -112,35 +120,49 @@ export default function LoadingPage({
     <div
       role="status"
       aria-live="polite"
-      aria-busy={!isFadingOut}
-      aria-label={isFadingOut ? "页面加载完成" : "页面加载中"}
+      aria-busy={!isPageFadingOut}
+      aria-label={isPageFadingOut ? "页面加载完成" : "页面加载中"}
       className={`
         fixed inset-0 z-[9999] bg-black
-        ${isFadingOut ? 'animate-fadeOut' : ''}
+        ${isPageFadingOut ? 'animate-fadeOut' : ''}
       `}
       style={{
-        willChange: isFadingOut ? 'opacity, transform' : 'auto'
+        willChange: isPageFadingOut ? 'opacity, transform' : 'auto'
       }}
       onAnimationEnd={handleAnimationEnd}
       onTransitionEnd={handleAnimationEnd}
     >
       {/* Screen reader text for accessibility (Requirement 10.4) */}
       <span className="sr-only">
-        {isFadingOut ? "加载完成" : "正在加载页面资源，请稍候..."}
+        {isPageFadingOut ? "加载完成" : "正在加载页面资源，请稍候..."}
       </span>
 
       {/* Arknights-style visual elements (Requirements 1.3, 1.4, 2.1-2.6) - 底层 */}
       <div className="absolute inset-0" style={{ zIndex: 1 }}>
-        <ArknightsVisuals isAnimating={!isFadingOut} />
+        <ArknightsVisuals isAnimating={!isFadingOut} isComplete={isFadingOut} />
       </div>
 
       {/* 科幻风格加载日志背景 - 左侧 */}
-      <div className="absolute inset-0" style={{ zIndex: 2 }}>
+      <div 
+        className="absolute inset-0" 
+        style={{ 
+          zIndex: 2,
+          opacity: isFadingOut ? 0 : 1,
+          transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
+        }}
+      >
         <LoadingLogs isAnimating={!isFadingOut} />
       </div>
 
       {/* 数据流面板 - 右侧 */}
-      <div className="absolute inset-0" style={{ zIndex: 2 }}>
+      <div 
+        className="absolute inset-0" 
+        style={{ 
+          zIndex: 2,
+          opacity: isFadingOut ? 0 : 1,
+          transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
+        }}
+      >
         <DataStreamPanel isAnimating={!isFadingOut} />
       </div>
     </div>

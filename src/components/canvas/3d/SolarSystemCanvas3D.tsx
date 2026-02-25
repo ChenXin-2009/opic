@@ -400,35 +400,7 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         scene.add(sunMesh);
         planetsRef.current.set('sun', sunPlanet);
         
-        // 为太阳创建标签（使用 CSS2D + 像素偏移，避免用 3D 空间单位把文字推到行星轨道附近）
-        if (!labelsRef.current.has('sun')) {
-          const labelDiv = document.createElement('div');
-          labelDiv.className = 'planet-label';
-          labelDiv.textContent = planetNames[lang]?.[sunBody.name] || sunBody.name;
-          labelDiv.style.color = '#ffffff';
-          labelDiv.style.fontSize = LABEL_CONFIG.fontSize;
-          labelDiv.style.fontWeight = LABEL_CONFIG.fontWeight;
-          labelDiv.style.fontFamily = LABEL_CONFIG.fontFamily;
-          labelDiv.style.pointerEvents = 'auto'; // 允许点击标签
-          labelDiv.style.cursor = 'pointer'; // 鼠标悬停时显示手型光标
-          labelDiv.style.userSelect = 'none';
-          labelDiv.style.textShadow = '0 0 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6)';
-          labelDiv.style.whiteSpace = 'nowrap';
-          labelDiv.style.opacity = '1';
-          labelDiv.style.transition = 'opacity 0.1s';
-          labelDiv.style.display = 'block';
-          
-          const label = new CSS2DObject(labelDiv);
-          // 太阳标签锚点放在太阳中心，通过 CSS 像素偏移控制具体显示位置
-          label.position.set(0, 0, 0);
-          labelDiv.style.position = 'absolute';
-          labelDiv.style.left = `${LABEL_CONFIG.offsetX}px`;
-          labelDiv.style.top = `${LABEL_CONFIG.sunOffsetY}px`;
-          // 覆盖 CSS2DObject 默认 transform，避免重复偏移
-          labelDiv.style.transform = 'translate(0, 0)';
-          sunMesh.add(label);
-          labelsRef.current.set('sun', label);
-        }
+
       }
 
       // 创建行星和轨道（含卫星）
