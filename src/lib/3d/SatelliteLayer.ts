@@ -156,7 +156,7 @@ export class SatelliteLayer {
     const interpolatedPositions = this.interpolator.getInterpolatedPositions(currentSimulatedTime);
     this.performanceMonitor.recordInterpolation(performance.now() - interpolationStart);
     
-    // 3. 如果有插值位置，更新渲染器
+    // 3. 如果有插值位置，更新渲染器；否则隐藏
     if (interpolatedPositions.size > 0) {
       // 获取地球位置
       const solarSystemState = useSolarSystemStore.getState();
@@ -201,26 +201,43 @@ export class SatelliteLayer {
         const cameraPosition = this.sceneManager.getCamera().position;
         const distanceToEarth = cameraPosition.distanceTo(earthPosition);
         
-        const threshold1 = 100000 / 149597870.7;
-        const threshold2 = 350000 / 149597870.7;
+        // 人造卫星可见性阈值
+        const visibilityThreshold = 5000000 / 149597870.7; // 5,000,000 km in AU (完全不可见)
+        const fadeThreshold = 1000000 / 149597870.7; // 1,000,000 km in AU (开始渐隐)
         
+        // 计算可见性和透明度
+        const isVisible = distanceToEarth < visibilityThreshold;
         let opacity: number;
         let size: number;
         
-        if (distanceToEarth < threshold1) {
-          opacity = 1.0;
-          size = satelliteConfig.rendering.pointSize;
-        } else if (distanceToEarth < threshold2) {
-          opacity = 1;
-          size = 4;
+        if (!isVisible) {
+          // 超出可见范围，完全隐藏
+          opacity = 0;
+          size = 0;
+          this.renderer.setVisible(false);
         } else {
-          opacity = 0.2;
-          size = 2;
+          // 在可见范围内
+          this.renderer.setVisible(true);
+          
+          if (distanceToEarth < fadeThreshold) {
+            // 近距离：完全不透明
+            opacity = 1.0;
+            size = satelliteConfig.rendering.pointSize;
+          } else {
+            // 渐隐区域：从 fadeThreshold 到 visibilityThreshold 线性渐隐
+            const fadeRange = visibilityThreshold - fadeThreshold;
+            const fadeDistance = distanceToEarth - fadeThreshold;
+            opacity = 1.0 - (fadeDistance / fadeRange);
+            size = satelliteConfig.rendering.pointSize * opacity;
+          }
         }
         
         this.renderer.setOpacity(opacity);
         this.renderer.setSize(size);
       }
+    } else {
+      // 没有插值位置时，隐藏渲染器
+      this.renderer.setVisible(false);
     }
     
     // 4. 自适应质量控制
