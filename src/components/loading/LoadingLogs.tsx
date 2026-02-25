@@ -359,15 +359,15 @@ export default function LoadingLogs({ isAnimating }: LoadingLogsProps) {
     };
   }, [isAnimating]);
 
-  // 获取日志颜色
+  // 获取日志颜色 - 冷钢蓝标准色系
   const getLogColor = (type: LogEntry['type']) => {
     switch (type) {
       case 'success':
-        return 'rgba(74, 222, 128, 0.4)'; // green - 淡淡的背景
+        return 'rgba(157, 195, 208, 0.5)'; // #9dc3d0 - 浅钢蓝（成功）
       case 'warning':
-        return 'rgba(251, 191, 36, 0.4)'; // yellow - 淡淡的背景
+        return 'rgba(124, 169, 185, 0.5)'; // #7ca9b9 - 中浅钢蓝（警告）
       default:
-        return 'rgba(255, 255, 255, 0.3)'; // white - 淡淡的背景
+        return 'rgba(72, 130, 150, 0.4)'; // #488296 - 标准钢蓝（普通）
     }
   };
 
@@ -383,20 +383,6 @@ export default function LoadingLogs({ isAnimating }: LoadingLogsProps) {
         overflowY: 'auto',
       }}
     >
-      {/* 渐变遮罩 - 顶部和底部淡出 */}
-      <div
-        className="absolute inset-x-0 top-0 h-32 pointer-events-none"
-        style={{
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%)',
-        }}
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
-        style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%)',
-        }}
-      />
-
       {/* 日志内容 */}
       <div className="space-y-1">
         {logs.map((log, index) => (
@@ -413,7 +399,7 @@ export default function LoadingLogs({ isAnimating }: LoadingLogsProps) {
             <span
               className="flex-shrink-0"
               style={{
-                color: 'rgba(255, 255, 255, 0.25)',
+                color: 'rgba(46, 95, 110, 0.45)', // #2e5f6e - 较深钢蓝
                 fontWeight: 300,
               }}
             >

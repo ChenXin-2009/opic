@@ -105,20 +105,6 @@ export default function DataStreamPanel({ isAnimating }: DataStreamProps) {
         direction: 'rtl', // 右对齐
       }}
     >
-      {/* 渐变遮罩 - 顶部和底部淡出 */}
-      <div
-        className="absolute inset-x-0 top-0 h-32 pointer-events-none"
-        style={{
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%)',
-        }}
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
-        style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%)',
-        }}
-      />
-
       {/* 数据流内容 */}
       <div className="space-y-0.5" style={{ direction: 'ltr' }}>
         {dataLines.map((line, index) => (
@@ -126,7 +112,7 @@ export default function DataStreamPanel({ isAnimating }: DataStreamProps) {
             key={line.id}
             className="flex items-start gap-3 justify-end transition-opacity duration-200"
             style={{
-              color: 'rgba(0, 255, 128, 0.25)', // 绿色数据流
+              color: 'rgba(72, 130, 150, 0.4)', // #488296 - 标准钢蓝
               opacity: 0,
               animation: `fadeInData 0.1s ease-out ${index * 0.01}s forwards`,
             }}
@@ -135,7 +121,7 @@ export default function DataStreamPanel({ isAnimating }: DataStreamProps) {
             <span
               className="flex-shrink-0"
               style={{
-                color: 'rgba(100, 200, 255, 0.3)', // 蓝色地址
+                color: 'rgba(99, 149, 167, 0.5)', // #6395a7 - 中钢蓝
                 fontWeight: 300,
               }}
             >
@@ -146,7 +132,7 @@ export default function DataStreamPanel({ isAnimating }: DataStreamProps) {
             <span
               className="flex-shrink-0"
               style={{
-                color: 'rgba(0, 255, 128, 0.25)',
+                color: 'rgba(72, 130, 150, 0.4)', // #488296 - 标准钢蓝
                 fontWeight: 300,
                 letterSpacing: '0.05em',
               }}
@@ -158,7 +144,7 @@ export default function DataStreamPanel({ isAnimating }: DataStreamProps) {
             <span
               className="flex-shrink-0"
               style={{
-                color: 'rgba(255, 255, 255, 0.15)',
+                color: 'rgba(157, 195, 208, 0.3)', // #9dc3d0 - 浅钢蓝
                 fontWeight: 300,
               }}
             >
