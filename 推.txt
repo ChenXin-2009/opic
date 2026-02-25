@@ -8,9 +8,9 @@
 ==================
 git status
 git add .
-git commit -m "Release 6.5.0: 添加了加载页面的加载日志详情"
+git commit -m "Release 6.5.1: 更高级的加载页面"
 git checkout main
 git pull origin main
-git tag v6.5.0
+git tag v6.5.1
 git push origin main
-git push origin v6.5.0
+git push origin v6.5.1
