@@ -351,10 +351,10 @@ export const HEADER_CONFIG = {
   enabled: true,
   
   // LOGO图片路径
-  logoPath: '/CX.svg',
+  logoPath: '/LOGO/logolw.svg',
   
   // LOGO大小（像素）
-  logoSize: 55,
+  logoSize: 200,
   
   // 左边距（像素）
   paddingLeft: 10,
@@ -395,7 +395,7 @@ export const HEADER_CONFIG = {
   borderColor: 'rgba(255, 255, 255, 0.1)',
   
   // 网站标题文本
-  titleText: 'SOMAP',
+  titleText: 'CXIC宇宙集成系统',
   
   // 网站副标题文本
   subtitleText: 'somap.cxin.tech',

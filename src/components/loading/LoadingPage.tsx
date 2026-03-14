@@ -142,6 +142,27 @@ export default function LoadingPage({
         <ArknightsVisuals isAnimating={!isFadingOut} isComplete={isFadingOut} />
       </div>
 
+      {/* 中心 LOGO */}
+      <div 
+        className="absolute inset-0 flex items-center justify-center" 
+        style={{ 
+          zIndex: 3,
+          opacity: isFadingOut ? 0 : 1,
+          transition: 'opacity 1500ms cubic-bezier(0.32, 0, 0.67, 0)',
+        }}
+      >
+        <img 
+          src="/LOGO/logolw.svg" 
+          alt="CXIC Logo" 
+          style={{
+            width: '400px',
+            height: '400px',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.3))',
+          }}
+        />
+      </div>
+
       {/* 科幻风格加载日志背景 - 左侧 */}
       <div 
         className="absolute inset-0" 

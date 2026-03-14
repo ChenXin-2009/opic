@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SoMap-太阳系实时地图",
-  description: "SoMap - 交互式太阳系和宇宙可视化应用。基于真实天文数据，探索从太阳系到可观测宇宙的9个尺度层次。支持高精度行星轨道计算、人造卫星实时追踪、银河系可视化。",
+  title: "CXIC宇宙集成系统",
+  description: "CXIC — CXIN Integrated Cosmos(CXIC 宇宙集成系统)- 一个基于 Web 的多尺度宇宙可视化与天文数据集成系统。基于真实天文数据，探索从太阳系到可观测宇宙的9个尺度层次。支持高精度行星轨道计算、人造卫星实时追踪、银河系可视化。",
   keywords: [
     "太阳系",
     "宇宙可视化",
@@ -35,6 +35,8 @@ export const metadata: Metadata = {
     "Solar System",
     "Universe Visualization",
     "Astronomy",
+    "CXIC",
+    "CXIN Integrated Cosmos",
   ],
   authors: [{ name: "ChenXin-2009", url: "https://github.com/ChenXin-2009" }],
   creator: "ChenXin-2009",
@@ -54,22 +56,22 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'zh_CN',
     url: 'https://somap.cxin.tech',
-    title: 'SoMap - 太阳系实时地图',
-    description: '交互式太阳系和宇宙可视化应用，探索从太阳系到可观测宇宙',
-    siteName: 'SoMap',
+    title: 'CXIC — CXIN Integrated Cosmos',
+    description: '一个基于 Web 的多尺度宇宙可视化与天文数据集成系统，探索从太阳系到可观测宇宙',
+    siteName: 'CXIC',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SoMap - 太阳系实时地图',
-    description: '交互式太阳系和宇宙可视化应用',
+    title: 'CXIC — CXIN Integrated Cosmos',
+    description: '一个基于 Web 的多尺度宇宙可视化与天文数据集成系统',
   },
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", type: "image/x-icon", sizes: "any" },
+      { url: "/favicon.png?v=2", type: "image/png", sizes: "any" },
+      { url: "/favicon.svg?v=2", type: "image/svg+xml" },
     ],
-    shortcut: "/favicon.ico",
-    apple: "/favicon.svg",
+    shortcut: "/favicon.png?v=2",
+    apple: "/favicon.png?v=2",
   },
   viewport: {
     width: 'device-width',
@@ -106,7 +108,7 @@ export default async function RootLayout({
     <html lang={lang} style={{ backgroundColor: '#000' }}>
       <head>
         {/* 关键 CSS - 确保黑色背景立即显示 */}
-        <style dangerouslySetInnerHTML={{__html: `
+        <style suppressHydrationWarning dangerouslySetInnerHTML={{__html: `
           html, body {
             background-color: #000 !important;
             margin: 0;
@@ -126,6 +128,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ backgroundColor: '#000' }}
+        suppressHydrationWarning
       >
         {/* React 加载页面 - 唯一的加载界面 */}
         <LoadingPage />

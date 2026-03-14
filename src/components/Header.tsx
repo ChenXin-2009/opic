@@ -191,7 +191,7 @@ interface LogoProps {
   alt?: string;
 }
 
-function Logo({ size, alt = 'SOMAP Logo' }: LogoProps): React.ReactElement {
+function Logo({ size, alt = 'CXIC Logo' }: LogoProps): React.ReactElement {
   return (
     <Image
       src={HEADER_CONFIG.logoPath}
@@ -201,7 +201,7 @@ function Logo({ size, alt = 'SOMAP Logo' }: LogoProps): React.ReactElement {
       priority
       style={{
         width: `${size}px`,
-        height: `${size}px`,
+        height: 'auto',
         objectFit: 'contain',
         flexShrink: 0,
       }}
@@ -231,7 +231,7 @@ function TextContent({ cfg, isFloating }: TextContentProps): React.ReactElement 
 }
 
 /**
- * Floating mode header component.
+ * Floating mode header component - Logo only version.
  */
 interface FloatingHeaderProps {
   cfg: any;
@@ -260,7 +260,6 @@ function FloatingHeader({
       onClick={onClick}
     >
       <Logo size={logoSize} />
-      <TextContent cfg={cfg} isFloating={true} />
     </div>
   );
 }
@@ -303,6 +302,33 @@ function TraditionalHeader({ cfg, isMobile }: TraditionalHeaderProps): React.Rea
  * The component is responsive and adjusts its layout for mobile devices.
  */
 export default function Header(): React.ReactElement | null {
-  // Header已禁用
-  return null;
+  const isMobile = useMobileDetection();
+  const [isHovered, setIsHovered] = useState(false);
+  const cfg = HEADER_CONFIG;
+
+  // 如果 Header 被禁用，返回 null
+  if (!cfg.enabled) {
+    return null;
+  }
+
+  const handleClick = () => {
+    // 可以添加点击事件处理逻辑
+  };
+
+  // 使用浮动模式
+  if (cfg.floatingMode) {
+    return (
+      <FloatingHeader
+        cfg={cfg}
+        isMobile={isMobile}
+        isHovered={isHovered}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleClick}
+      />
+    );
+  }
+
+  // 使用传统模式
+  return <TraditionalHeader cfg={cfg} isMobile={isMobile} />;
 }

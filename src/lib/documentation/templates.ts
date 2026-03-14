@@ -206,15 +206,15 @@ export const RENDER_FUNCTION_TEMPLATE = `/**
  *  * - semiMajorAxis: AU（天文单位）
  *  * - eccentricity: 无量纲（0-1）
  *  * - inclination: 弧度（rad）
- *  *\/
+ *  *\\/
  * interface OrbitalElements {
- *   /** 半长轴，单位：AU */
+ *   /** 半长轴，单位：AU *\\/
  *   semiMajorAxis: number;
  *   
- *   /** 离心率，范围：[0, 1)，0 表示圆形轨道 *\/
+ *   /** 离心率，范围：[0, 1)，0 表示圆形轨道 *\\/
  *   eccentricity: number;
  *   
- *   /** 轨道倾角，单位：弧度，范围：[0, π] *\/
+ *   /** 轨道倾角，单位：弧度，范围：[0, π] *\\/
  *   inclination: number;
  * }
  * ```

@@ -1,6 +1,7 @@
 {
-  "name": "somap",
+  "name": "cxic",
   "version": "1.1.0",
+  "description": "一个基于 Web 的多尺度宇宙可视化与天文数据集成系统",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +12,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "quality:report": "node scripts/quality-report.js",
     "quality:check": "npm run lint && tsc --noEmit",
     "convert-ucs-data": "npx tsx scripts/convert-ucs-data.ts",
     "prepare": "node -e \"try { require('husky').install() } catch (e) {}\""

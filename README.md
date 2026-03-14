@@ -1,12 +1,12 @@
-# SoMap - 太阳系实时地图
+# CXIC — CXIN Integrated Cosmos（CXIC 宇宙集成系统）
 
-**交互式太阳系与宇宙可视化应用**
+**一个基于 Web 的多尺度宇宙可视化与天文数据集成系统**
 
 ---
 
 ### 项目简介
 
-SoMap 是一个基于 Web 的交互式太阳系和宇宙可视化应用，使用 Three.js 和 Next.js 构建。通过真实的天文数据和精确的轨道计算，为您呈现从太阳系到可观测宇宙的动态模拟。
+CXIC 是一个基于 Web 的交互式太阳系和宇宙可视化应用，使用 Three.js 和 Next.js 构建。通过真实的天文数据和精确的轨道计算，为您呈现从太阳系到可观测宇宙的动态模拟。
 
 ### 主要功能
 
@@ -93,7 +93,7 @@ SoMap 是一个基于 Web 的交互式太阳系和宇宙可视化应用，使用
 ```bash
 # 克隆仓库
 git clone https://github.com/ChenXin-2009/somap.git
-cd somap
+cd cxic
 
 # 安装依赖
 npm install
@@ -121,7 +121,7 @@ npm start
 ### 项目结构
 
 ```
-somap/
+cxic/
 ├── src/
 │   ├── app/                    # Next.js 应用路由
 │   ├── components/             # React 组件
