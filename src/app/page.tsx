@@ -8,6 +8,8 @@ import InfoModal from "@/components/InfoModal";
 import { SatelliteMenu } from "@/components/satellite";
 import { HEADER_CONFIG } from "@/lib/config/visualConfig";
 import EphemerisStatusPanel from "@/components/EphemerisStatusPanel";
+import CesiumDebugPanel from "@/components/debug/CesiumDebugPanel";
+import CesiumToggleButton from "@/components/CesiumToggleButton";
 
 /**
  * Info button component for top-right corner.
@@ -140,6 +142,9 @@ function EphemerisButton({ onClick }: { onClick: () => void }) {
 export default function SolarSystemPage() {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isEphemerisStatusOpen, setIsEphemerisStatusOpen] = useState(false);
+  const [cesiumEnabled, setCesiumEnabled] = useState(false); // 默认禁用 Cesium
+  const [earthPlanet, setEarthPlanet] = useState<any>(null);
+  const [camera, setCamera] = useState<any>(null);
 
   // 计算顶部偏移（Header高度）- 漂浮模式下不需要预留空间
   const headerHeight = (HEADER_CONFIG.enabled && !HEADER_CONFIG.floatingMode) ? HEADER_CONFIG.height : 0;
@@ -159,6 +164,12 @@ export default function SolarSystemPage() {
       <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
       <EphemerisStatusPanel isOpen={isEphemerisStatusOpen} onClose={() => setIsEphemerisStatusOpen(false)} />
       
+      {/* Cesium 切换按钮（产品功能） */}
+      <CesiumToggleButton onToggle={setCesiumEnabled} initialEnabled={cesiumEnabled} />
+      
+      {/* Cesium 调试面板（开发测试） */}
+      <CesiumDebugPanel earthPlanet={earthPlanet} camera={camera} />
+      
       {/* 卫星菜单按钮 */}
       <SatelliteMenu lang="zh" />
       
@@ -173,7 +184,11 @@ export default function SolarSystemPage() {
         }}
       >
         <div className="flex-1 relative min-h-0" style={{ isolation: 'isolate', maxHeight: '100%' }}>
-          <SolarSystemCanvas3D />
+          <SolarSystemCanvas3D 
+            cesiumEnabled={cesiumEnabled} 
+            onEarthPlanetReady={setEarthPlanet}
+            onCameraReady={setCamera}
+          />
         </div>
         <TimeControl />
       </div>

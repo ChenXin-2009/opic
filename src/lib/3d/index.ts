@@ -53,6 +53,8 @@
 export { SceneManager } from './SceneManager';
 export { CameraController } from './CameraController';
 export { Planet } from './Planet';
+export { EarthPlanet } from './EarthPlanet';
+export type { EarthPlanetConfig } from './EarthPlanet';
 export { OrbitCurve } from './OrbitCurve';
 export { OrbitLabel } from './OrbitLabel';
 export { SatelliteOrbit } from './SatelliteOrbit';

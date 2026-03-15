@@ -24,6 +24,7 @@ import { useSatelliteStore } from '@/lib/store/useSatelliteStore';
 import { SceneManager } from '@/lib/3d/SceneManager';
 import { CameraController } from '@/lib/3d/CameraController';
 import { Planet } from '@/lib/3d/Planet';
+import { EarthPlanet } from '@/lib/3d/EarthPlanet';
 import { OrbitCurve } from '@/lib/3d/OrbitCurve';
 import { OrbitLabel } from '@/lib/3d/OrbitLabel';
 import { SatelliteOrbit } from '@/lib/3d/SatelliteOrbit';
@@ -216,9 +217,12 @@ async function initializeUniverseRenderers(sceneManager: SceneManager) {
 
 interface SolarSystemCanvas3DProps {
   onCameraDistanceChange?: (distance: number) => void;
+  cesiumEnabled?: boolean;
+  onEarthPlanetReady?: (earthPlanet: any) => void;
+  onCameraReady?: (camera: any) => void;
 }
 
-export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSystemCanvas3DProps = {}) {
+export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnabled = false, onEarthPlanetReady, onCameraReady }: SolarSystemCanvas3DProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneManagerRef = useRef<SceneManager | null>(null);
   const cameraControllerRef = useRef<CameraController | null>(null);
@@ -253,6 +257,14 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
   // 这样可以避免每次状态更新都触发组件重渲染
   // 但初始化时需要获取初始值
   const lang = useSolarSystemStore((state) => state.lang);
+
+  // 监听 cesiumEnabled 变化,动态切换 Cesium 渲染
+  React.useEffect(() => {
+    const earthPlanet = planetsRef.current.get('earth');
+    if (earthPlanet && 'setCesiumEnabled' in earthPlanet) {
+      (earthPlanet as any).setCesiumEnabled(cesiumEnabled);
+    }
+  }, [cesiumEnabled]);
 
   // 初始化场景 - 使用 useLayoutEffect 确保 DOM 准备好
   useLayoutEffect(() => {
@@ -297,6 +309,12 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
       const scene = sceneManager.getScene();
       const camera = sceneManager.getCamera();
       cameraRef.current = camera; // 保存相机引用用于标尺
+      
+      // 通知父组件 camera 已准备好
+      if (onCameraReady) {
+        onCameraReady(camera);
+      }
+      
       const renderer = sceneManager.getRenderer();
       
       // 创建 CSS2DRenderer 用于显示标记圈
@@ -414,11 +432,32 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         // 创建天体（行星或卫星）
         const bodyKey = body.name.toLowerCase();
         const celestialConfig = CELESTIAL_BODIES[bodyKey];
-        const planet = new Planet({
-          body,
-          ...(celestialConfig && { config: celestialConfig }),
-          rotationSpeed: ROTATION_SPEEDS[bodyKey] || 0, // Fallback to old system
-        });
+        
+        // 如果是地球,使用 EarthPlanet 启用 Cesium 集成
+        const planet = bodyKey === 'earth' 
+          ? new EarthPlanet({
+              body,
+              ...(celestialConfig && { config: celestialConfig }),
+              rotationSpeed: ROTATION_SPEEDS[bodyKey] || 0,
+              // 始终创建 Cesium 扩展,但默认禁用
+              enableCesiumTiles: true,
+              // Cesium 配置
+              cesiumConfig: {
+                cesiumContainerId: 'cesium-earth-canvas',
+                canvasResolutionScale: 1.0,
+                maximumScreenSpaceError: 2,
+                maximumNumberOfLoadedTiles: 1000,
+              },
+              // 距离阈值 - 不再使用,Cesium 在所有距离都可用
+              cesiumVisibleDistance: 2000,
+              transitionStartDistance: 1800,
+              transitionEndDistance: 2500,
+            })
+          : new Planet({
+              body,
+              ...(celestialConfig && { config: celestialConfig }),
+              rotationSpeed: ROTATION_SPEEDS[bodyKey] || 0,
+            });
         planet.updatePosition(body.x, body.y, body.z);
         const planetMesh = planet.getMesh();
         scene.add(planetMesh);
@@ -426,8 +465,24 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         (planetMesh as any).userData = (planetMesh as any).userData || {};
         (planetMesh as any).userData.radius = planet.getRealRadius();
         planetsRef.current.set(body.name.toLowerCase(), planet);
+        
+        // 如果是地球,注册到 SceneManager 并设置初始状态
+        if (bodyKey === 'earth' && sceneManagerRef.current) {
+          sceneManagerRef.current.setEarthPlanet(planet);
+          
+          // 通知父组件 earthPlanet 已准备好
+          if (onEarthPlanetReady) {
+            onEarthPlanetReady(planet);
+          }
+          
+          // 设置初始 Cesium 状态(默认禁用)
+          if ('setCesiumEnabled' in planet) {
+            (planet as any).setCesiumEnabled(cesiumEnabled);
+          }
+        }
 
         // 异步加载并应用贴图（Render Layer only - 不影响物理计算）
+        // 所有行星都需要加载纹理作为 fallback
         const textureManager = TextureManager.getInstance();
         textureManager.getTexture(bodyKey).then((texture) => {
           if (texture && !planet.getIsSun()) {
@@ -849,6 +904,11 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           } catch (err) {
             // 忽略错误，保持渲染循环稳定
           }
+        }
+        
+        // 更新 EarthPlanet（Cesium 集成）
+        if (sceneManagerRef.current) {
+          sceneManagerRef.current.updateEarthPlanet(deltaTime);
         }
 
         // 更新天空盒/星空位置（固定在相机空间）

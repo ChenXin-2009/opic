@@ -146,6 +146,9 @@ export class SceneManager {
   private virgoSuperclusterRenderer: any | null = null;
   private laniakeaSuperclusterRenderer: any | null = null;
   private observableBoundarySphere: THREE.LineSegments | null = null;
+  
+  // Cesium 地球集成（可选）
+  private earthPlanet: any | null = null; // 使用 any 避免强制依赖 EarthPlanet
 
   /**
    * Creates a new SceneManager instance.
@@ -944,6 +947,37 @@ export class SceneManager {
     this.universeGroup.rotation.z = z * degToRad;
     console.log('[SceneManager] 宇宙组旋转偏移已更新:', { x, y, z });
   }
+  
+  /**
+   * 设置 EarthPlanet 实例（可选的 Cesium 地球集成）
+   * 
+   * @param earthPlanet - EarthPlanet 实例
+   */
+  setEarthPlanet(earthPlanet: any): void {
+    this.earthPlanet = earthPlanet;
+  }
+  
+  /**
+   * 获取 EarthPlanet 实例
+   * 
+   * @returns EarthPlanet 实例或 null
+   */
+  getEarthPlanet(): any | null {
+    return this.earthPlanet;
+  }
+  
+  /**
+   * 更新 EarthPlanet（如果存在）
+   * 
+   * 应在渲染循环中调用，用于更新 Cesium 地球渲染
+   * 
+   * @param deltaTime - 时间增量（秒）
+   */
+  updateEarthPlanet(deltaTime: number): void {
+    if (this.earthPlanet && typeof this.earthPlanet.update === 'function') {
+      this.earthPlanet.update(this.camera, deltaTime);
+    }
+  }
 
   /**
    * 更新渲染器和相机尺寸
@@ -1188,6 +1222,12 @@ export class SceneManager {
     if (this.laniakeaSuperclusterRenderer) {
       this.laniakeaSuperclusterRenderer.dispose();
       this.laniakeaSuperclusterRenderer = null;
+    }
+    
+    // 清理 EarthPlanet（如果存在）
+    if (this.earthPlanet && typeof this.earthPlanet.dispose === 'function') {
+      this.earthPlanet.dispose();
+      this.earthPlanet = null;
     }
     
     // 清理可观测宇宙边界球体
