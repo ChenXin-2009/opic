@@ -30,7 +30,7 @@ export class CoordinateTransformer {
    * Solar System Frame → Cesium Camera Position
    * 
    * 将太阳系坐标系中的相机位置转换为 Cesium 相机位置
-   * 使用球面坐标系,确保相机高度在合理范围内
+   * 直接进行笛卡尔坐标转换，不使用球面坐标
    * 
    * @param cameraPosition - 相机在 Solar System Frame 中的位置（AU）
    * @param earthPosition - 地球在 Solar System Frame 中的位置（AU）
@@ -40,54 +40,45 @@ export class CoordinateTransformer {
     cameraPosition: THREE.Vector3,
     earthPosition: THREE.Vector3
   ): Cesium.Cartesian3 {
-    // 1. 计算相机相对于地球的位置（局部坐标系）
+    // 1. 计算相机相对于地球的位置（局部坐标系，AU）
     const localPosition = cameraPosition.clone().sub(earthPosition);
     
-    // 2. 转换为球面坐标
-    const distance = localPosition.length(); // AU
+    // 2. 坐标系转换：Three.js (Y-up) → Cesium ECEF (Z-up)
+    // Three.js: X-right, Y-up, Z-backward
+    // Cesium ECEF: X-right, Y-forward, Z-up
+    // 转换公式：
+    //   Cesium.x = Three.x
+    //   Cesium.y = Three.z
+    //   Cesium.z = Three.y
+    const localCesiumX = localPosition.x;
+    const localCesiumY = localPosition.z;
+    const localCesiumZ = localPosition.y;
     
-    // 防止除以零
-    if (distance < 0.0000001) {
-      console.warn('[CoordinateTransformer] Camera too close to Earth center, using default position');
-      return new Cesium.Cartesian3(
-        CoordinateConstants.EARTH_RADIUS_METERS * 2,
-        0,
-        0
-      );
-    }
+    // 3. 转换单位：AU → 米
+    const positionMetersX = localCesiumX * CoordinateConstants.AU_TO_METERS;
+    const positionMetersY = localCesiumY * CoordinateConstants.AU_TO_METERS;
+    const positionMetersZ = localCesiumZ * CoordinateConstants.AU_TO_METERS;
     
-    const distanceMeters = distance * CoordinateConstants.AU_TO_METERS;
+    // 4. 创建 ECEF 坐标
+    const cameraECEF = new Cesium.Cartesian3(
+      positionMetersX,
+      positionMetersY,
+      positionMetersZ
+    );
     
-    // 3. 计算经纬度
-    // 注意：Three.js 使用 Y-up,需要转换为球面坐标
-    const longitude = Math.atan2(localPosition.x, localPosition.z); // 弧度
-    const latitude = Math.asin(Math.max(-1, Math.min(1, localPosition.y / distance))); // 弧度，限制在 [-1, 1]
-    
-    // 4. 计算高度（相机到地球表面的距离）
-    const height = distanceMeters - CoordinateConstants.EARTH_RADIUS_METERS;
-    
-    // 5. 转换为 ECEF 坐标
-    const longitudeDegrees = Cesium.Math.toDegrees(longitude);
-    const latitudeDegrees = Cesium.Math.toDegrees(latitude);
-    
-    // 调试日志（每 60 次输出一次）
-    if (Math.random() < 0.016) {
+    // 调试日志（偶尔输出）
+    if (Math.random() < 0.01) {
+      const distance = localPosition.length();
+      const distanceKm = distance * CoordinateConstants.AU_TO_METERS / 1000;
       console.log('[CoordinateTransformer] Camera conversion:', {
-        localPos: { x: localPosition.x.toFixed(6), y: localPosition.y.toFixed(6), z: localPosition.z.toFixed(6) },
-        distanceAU: distance.toFixed(6),
-        lon: longitudeDegrees.toFixed(2),
-        lat: latitudeDegrees.toFixed(2),
-        heightKm: (height / 1000).toFixed(0)
+        localThree: { x: localPosition.x.toFixed(6), y: localPosition.y.toFixed(6), z: localPosition.z.toFixed(6) },
+        localCesium: { x: localCesiumX.toFixed(6), y: localCesiumY.toFixed(6), z: localCesiumZ.toFixed(6) },
+        distanceKm: distanceKm.toFixed(0),
+        ecef: { x: cameraECEF.x.toFixed(0), y: cameraECEF.y.toFixed(0), z: cameraECEF.z.toFixed(0) }
       });
     }
     
-    const cartographic = Cesium.Cartographic.fromDegrees(
-      longitudeDegrees,
-      latitudeDegrees,
-      height
-    );
-    
-    return Cesium.Cartographic.toCartesian(cartographic);
+    return cameraECEF;
   }
   
   /**

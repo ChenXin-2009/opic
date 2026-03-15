@@ -37,20 +37,24 @@ export class CameraSynchronizer {
     // 2. 设置 Cesium 相机位置
     cesiumCamera.position = cameraECEF;
     
-    // 3. 计算相机在地球局部坐标系中的位置（用于计算方向）
-    const cameraLocalThree = threeCamera.position.clone().sub(earthPosition);
+    // 3. 获取 Three.js 相机的世界变换矩阵
+    const worldMatrix = threeCamera.matrixWorld;
     
-    // 4. 获取 Three.js 相机的方向向量（世界空间）
-    const directionThree = new THREE.Vector3(0, 0, -1).applyQuaternion(threeCamera.quaternion);
-    const upThree = new THREE.Vector3(0, 1, 0).applyQuaternion(threeCamera.quaternion);
+    // 4. 从世界矩阵提取方向向量（已经在世界空间）
+    // Three.js 相机默认看向 -Z 方向
+    const directionThree = new THREE.Vector3(0, 0, -1);
+    const upThree = new THREE.Vector3(0, 1, 0);
     
-    // 5. 坐标系转换：Three.js (Y-up) → Cesium (Z-up)
-    // Three.js: X-right, Y-up, Z-backward
-    // Cesium ECEF: X-right, Y-forward, Z-up
-    // 转换公式：
-    //   Cesium.x = Three.x
-    //   Cesium.y = Three.z
-    //   Cesium.z = Three.y
+    // 应用相机的旋转（不包括位置）
+    directionThree.applyMatrix4(worldMatrix).sub(threeCamera.position).normalize();
+    upThree.applyMatrix4(worldMatrix).sub(threeCamera.position).normalize();
+    
+    // 5. 坐标系转换：Three.js (Y-up, Z-backward) → Cesium ECEF (Z-up, Y-forward)
+    // 转换矩阵：
+    //   [1  0  0]   [x]
+    //   [0  0  1] * [y]
+    //   [0  1  0]   [z]
+    // 即：Cesium(x,y,z) = Three(x, z, y)
     const directionCesium = new Cesium.Cartesian3(
       directionThree.x,
       directionThree.z,
@@ -63,16 +67,16 @@ export class CameraSynchronizer {
       upThree.y
     );
     
-    // 6. 归一化方向向量
+    // 6. 设置 Cesium 相机方向（已归一化）
     cesiumCamera.direction = Cesium.Cartesian3.normalize(directionCesium, new Cesium.Cartesian3());
     cesiumCamera.up = Cesium.Cartesian3.normalize(upCesium, new Cesium.Cartesian3());
     
     // 调试日志（偶尔输出）
     if (Math.random() < 0.01) {
       console.log('[CameraSynchronizer] Camera sync:', {
-        position: { x: cameraECEF.x.toFixed(0), y: cameraECEF.y.toFixed(0), z: cameraECEF.z.toFixed(0) },
-        direction: { x: cesiumCamera.direction.x.toFixed(3), y: cesiumCamera.direction.y.toFixed(3), z: cesiumCamera.direction.z.toFixed(3) },
-        up: { x: cesiumCamera.up.x.toFixed(3), y: cesiumCamera.up.y.toFixed(3), z: cesiumCamera.up.z.toFixed(3) }
+        threeDir: { x: directionThree.x.toFixed(3), y: directionThree.y.toFixed(3), z: directionThree.z.toFixed(3) },
+        cesiumDir: { x: cesiumCamera.direction.x.toFixed(3), y: cesiumCamera.direction.y.toFixed(3), z: cesiumCamera.direction.z.toFixed(3) },
+        cesiumUp: { x: cesiumCamera.up.x.toFixed(3), y: cesiumCamera.up.y.toFixed(3), z: cesiumCamera.up.z.toFixed(3) }
       });
     }
     

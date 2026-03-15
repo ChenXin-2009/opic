@@ -214,6 +214,15 @@ export class CesiumAdapter {
       console.log('[CesiumAdapter] SkyBox disabled');
     }
     
+    // 设置场景背景色为黑色（而不是显示 skybox）
+    this.viewer.scene.backgroundColor = Cesium.Color.BLACK;
+    console.log('[CesiumAdapter] Scene background set to black');
+    
+    // 确保 globe 显示并且在前景
+    this.viewer.scene.globe.show = true;
+    this.viewer.scene.globe.depthTestAgainstTerrain = false;
+    console.log('[CesiumAdapter] Globe show confirmed:', this.viewer.scene.globe.show);
+    
     // 获取 Cesium 内部创建的 canvas
     this.cesiumCanvas = this.viewer.scene.canvas;
     
