@@ -131,6 +131,7 @@ export class SceneManager {
   private camera: THREE.PerspectiveCamera;
   private container: HTMLElement;
   private skybox: THREE.Mesh | null = null;
+  private cesiumCompositeMode: boolean = false;
   
   // 多尺度宇宙视图组件
   private nearbyStars: NearbyStars | null = null;
@@ -363,6 +364,8 @@ export class SceneManager {
     this.applySkyboxOrientation(this.skybox);
     
     this.scene.add(this.skybox);
+    // 如果当前是 Cesium 合成模式，天空盒加载完成后也要保持隐藏
+    if (this.cesiumCompositeMode) this.skybox.visible = false;
     this.applyStarsAlignment();
   }
   
@@ -780,7 +783,11 @@ export class SceneManager {
    * 更新银河系背景透明度
    */
   private updateSkyboxOpacity(cameraDistance: number, deltaTime: number): void {
-    const config = SCALE_VIEW_CONFIG;
+    // Cesium 模式下天空盒始终隐藏（透明背景合成）
+    if (this.cesiumCompositeMode) {
+      if (this.skybox) this.skybox.visible = false;
+      return;
+    }
     
     // 0.7 光年 = 0.7 * LIGHT_YEAR_TO_AU
     const fadeEnd = 0.7 * 63241.077; // 约 44269 AU
@@ -1050,12 +1057,15 @@ export class SceneManager {
    * 普通模式下：Three.js canvas 不透明黑色背景
    */
   setCesiumCompositeMode(enabled: boolean): void {
+    this.cesiumCompositeMode = enabled;
     if (enabled) {
       this.renderer.setClearColor(0x000000, 0); // 透明背景
       this.scene.background = null;
+      if (this.skybox) this.skybox.visible = false;
     } else {
       this.renderer.setClearColor(0x000000, 1); // 不透明黑色
       this.scene.background = new THREE.Color(0x000000);
+      if (this.skybox) this.skybox.visible = true;
     }
   }
 
