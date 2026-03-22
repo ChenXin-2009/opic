@@ -95,7 +95,12 @@ export class CameraSynchronizer {
       });
     }
     
-    // 注意：不同步投影矩阵，让 Cesium 使用自己的投影矩阵和动态 near/far 裁剪面
+    // 同步 FOV：将 Three.js 的垂直 FOV 设置给 Cesium，确保地球大小一致
+    // Cesium frustum 使用弧度，Three.js 使用角度
+    const fovRadians = THREE.MathUtils.degToRad(threeCamera.fov);
+    if (cesiumCamera.frustum instanceof Cesium.PerspectiveFrustum) {
+      cesiumCamera.frustum.fov = fovRadians;
+    }
   }
   
   /**
