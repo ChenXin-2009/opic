@@ -348,7 +348,7 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
         labelRenderer.domElement.style.top = '0';
         labelRenderer.domElement.style.left = '0';
         labelRenderer.domElement.style.pointerEvents = 'none';
-        labelRenderer.domElement.style.zIndex = '1';
+        labelRenderer.domElement.style.zIndex = '3'; // 标签层在最上面
         containerRef.current.appendChild(labelRenderer.domElement);
         labelRendererRef.current = labelRenderer;
       }

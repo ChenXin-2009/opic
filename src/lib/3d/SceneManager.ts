@@ -364,8 +364,6 @@ export class SceneManager {
     this.applySkyboxOrientation(this.skybox);
     
     this.scene.add(this.skybox);
-    // 如果当前是 Cesium 合成模式，天空盒加载完成后也要保持隐藏
-    if (this.cesiumCompositeMode) this.skybox.visible = false;
     this.applyStarsAlignment();
   }
   
@@ -783,11 +781,6 @@ export class SceneManager {
    * 更新银河系背景透明度
    */
   private updateSkyboxOpacity(cameraDistance: number, deltaTime: number): void {
-    // Cesium 模式下天空盒始终隐藏（透明背景合成）
-    if (this.cesiumCompositeMode) {
-      if (this.skybox) this.skybox.visible = false;
-      return;
-    }
     const config = SCALE_VIEW_CONFIG;
     
     // 0.7 光年 = 0.7 * LIGHT_YEAR_TO_AU
@@ -1060,13 +1053,13 @@ export class SceneManager {
   setCesiumCompositeMode(enabled: boolean): void {
     this.cesiumCompositeMode = enabled;
     if (enabled) {
-      this.renderer.setClearColor(0x000000, 0); // 透明背景
+      this.renderer.setClearColor(0x000000, 0); // 透明背景，让 Cesium 地球从下层透出来
       this.scene.background = null;
-      if (this.skybox) this.skybox.visible = false;
+      // 天空盒保持可见：它在 Three.js canvas 里渲染，renderOrder=-1000 最先渲染
+      // depth-only 地球 mesh 会正确遮挡它，银河系背景仍然可见
     } else {
       this.renderer.setClearColor(0x000000, 1); // 不透明黑色
       this.scene.background = new THREE.Color(0x000000);
-      if (this.skybox) this.skybox.visible = true;
     }
   }
 
