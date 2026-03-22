@@ -201,6 +201,10 @@ export class SceneManager {
     // 这样可以避免影响 fixed 定位的按钮（Firefox 特别敏感）
     this.renderer.domElement.style.touchAction = 'none';
     
+    // 设置 Three.js canvas z-index（宇宙场景层在后）
+    this.renderer.domElement.style.position = 'absolute';
+    this.renderer.domElement.style.zIndex = '1';
+    
     container.appendChild(this.renderer.domElement);
 
     // 初始化场景

@@ -59,10 +59,13 @@ export class EarthPlanet extends Planet {
           this.originalMaterial = mesh.material as THREE.Material;
         }
         
-        // 监听错误
+        // 监听错误 — 只在初始化失败时 fallback，渲染错误不 fallback
         this.cesiumExtension.onError((error) => {
           console.error('Cesium extension error:', error);
-          this.fallbackToPlanetRendering();
+          // 只有初始化错误才 fallback（渲染错误不销毁扩展）
+          if (error.name === 'CesiumInitializationError' || error.name === 'WebGLContextLostError') {
+            this.fallbackToPlanetRendering();
+          }
         });
       } catch (error) {
         console.error('Failed to initialize Cesium extension:', error);
@@ -72,44 +75,33 @@ export class EarthPlanet extends Planet {
   }
   
   /**
+   * 重写 updateRotation - Cesium 启用时跳过旋转（Cesium 直接渲染地球）
+   */
+  override updateRotation(currentTimeInDays: number, timeSpeed: number = 1, isPlaying: boolean = true): void {
+    if (this.cesiumEnabled) {
+      return; // Cesium 启用时不旋转 Planet mesh
+    }
+    super.updateRotation(currentTimeInDays, timeSpeed, isPlaying);
+  }
+
+  /**
    * 更新地球渲染
    * 
    * @param camera - Three.js 相机
    * @param deltaTime - 时间增量（秒）
    */
   update(camera: THREE.Camera, deltaTime: number): void {
-    // 调用父类更新（自转等）
-    super.updateRotation(0, 1, true); // 使用默认参数
-    
-    // 计算相机到地球中心的距离(AU)
-    const cameraDistance = camera.position.distanceTo(this.getMesh().position);
-    
-    // 获取地球半径(AU)
-    const earthRadiusAU = this.getRealRadius();
-    
-    // 转换为千米
-    const distanceToCenterKm = cameraDistance * AU_TO_KM;
-    const earthRadiusKm = earthRadiusAU * AU_TO_KM;
-    
-    // 计算相机到地球表面的距离
-    const distanceToSurfaceKm = distanceToCenterKm - earthRadiusKm;
-    
-    // 更新渲染模式（现在是空函数，不再根据距离控制）
-    this.updateRenderMode(distanceToSurfaceKm);
-    
-    // 只有在 Cesium 启用时才更新 Cesium 扩展
     if (this.cesiumExtension && this.cesiumEnabled) {
-      // 同步相机到 Cesium (必须在渲染前调用)
       if (camera instanceof THREE.PerspectiveCamera) {
-        this.syncCamera(camera);
+        // 1. 渲染 Cesium 场景（Cesium 自己处理相机控制）
+        this.cesiumExtension.render();
+        
+        // 2. 将 Cesium 相机状态同步回 Three.js 相机
+        // 这样 Three.js 场景（太阳系、卫星等）会跟随 Cesium 相机移动
+        this.cesiumExtension.syncCameraFromCesium(camera, this.getMesh().position);
       }
-      
-      // 渲染 Cesium
-      this.cesiumExtension.render();
-      
-      // 更新纹理
-      this.cesiumExtension.updateTexture();
     }
+    // Cesium 禁用时旋转由 updateRotation override 处理，这里不重复调用
   }
   
   /**
@@ -149,38 +141,6 @@ export class EarthPlanet extends Planet {
   }
   
   /**
-   * 计算 Alpha 混合系数
-   * 
-   * @param distanceKm - 相机距离（千米）
-   * @returns Alpha 值（0-1）
-   */
-  calculateAlphaBlend(distanceKm: number): number {
-    const start = this.config.transitionStartDistance!;
-    const end = this.config.transitionEndDistance!;
-    
-    if (distanceKm <= start) return 0.0;
-    if (distanceKm >= end) return 1.0;
-    
-    // 线性插值
-    return (distanceKm - start) / (end - start);
-  }
-  
-  /**
-   * 设置网格透明度
-   */
-  private setMeshOpacity(opacity: number): void {
-    const mesh = this.getMesh();
-    if (mesh instanceof THREE.Mesh && mesh.material) {
-      const material = mesh.material as THREE.Material;
-      if ('opacity' in material) {
-        (material as any).opacity = opacity;
-        material.transparent = opacity < 1.0;
-        material.visible = opacity > 0;
-      }
-    }
-  }
-  
-  /**
    * 降级到 Planet 球体渲染
    */
   private fallbackToPlanetRendering(): void {
@@ -193,7 +153,10 @@ export class EarthPlanet extends Planet {
     }
     
     // 确保 Planet 球体可见
-    this.setMeshOpacity(1.0);
+    const mesh = this.getMesh();
+    if (mesh instanceof THREE.Mesh) {
+      mesh.visible = true;
+    }
   }
   
   /**
@@ -201,27 +164,6 @@ export class EarthPlanet extends Planet {
    */
   getCesiumExtension(): CesiumEarthExtension | null {
     return this.cesiumExtension;
-  }
-  
-  /**
-   * 获取 Cesium 透明度（用于测试）
-   */
-  getCesiumOpacity(): number {
-    return this.cesiumExtension?.getOpacity() ?? 0.0;
-  }
-  
-  /**
-   * 获取网格透明度（用于测试）
-   */
-  getMeshOpacity(): number {
-    const mesh = this.getMesh();
-    if (mesh instanceof THREE.Mesh && mesh.material) {
-      const material = mesh.material as THREE.Material;
-      if ('opacity' in material) {
-        return (material as any).opacity;
-      }
-    }
-    return 1.0;
   }
   
   /**
@@ -233,7 +175,7 @@ export class EarthPlanet extends Planet {
     console.log(`[EarthPlanet] setCesiumEnabled called with: ${enabled}`);
     
     if (!this.cesiumExtension) {
-      console.warn('[EarthPlanet] No Cesium extension available');
+      console.warn('[EarthPlanet] No Cesium extension available — cannot enable Cesium');
       this.cesiumEnabled = false;
       return;
     }
@@ -247,41 +189,17 @@ export class EarthPlanet extends Planet {
     this.cesiumEnabled = enabled;
     
     if (enabled) {
-      // 启用 Cesium: 将材质替换为 Cesium 材质
-      if (!this.originalMaterial) {
-        this.originalMaterial = mesh.material as THREE.Material;
-        console.log('[EarthPlanet] Saved original material:', this.originalMaterial);
-      }
-      
-      const cesiumMaterial = this.cesiumExtension.getMaterial();
-      console.log('[EarthPlanet] Switching to Cesium material:', cesiumMaterial);
-      
-      // 先设置可见性和透明度，再切换材质
+      // 启用 Cesium: 显示 Cesium canvas，隐藏 Planet 球体
+      console.log('[EarthPlanet] Enabling Cesium canvas overlay');
       this.cesiumExtension.setVisible(true);
-      this.cesiumExtension.setOpacity(1.0);
-      
-      console.log('[EarthPlanet] After setVisible/setOpacity:');
-      console.log('[EarthPlanet] Cesium material visible:', cesiumMaterial.visible);
-      console.log('[EarthPlanet] Cesium material opacity:', (cesiumMaterial as any).opacity);
-      
-      mesh.material = cesiumMaterial;
-      mesh.material.needsUpdate = true;
-      
-      console.log('[EarthPlanet] Cesium enabled, material switched');
+      mesh.visible = false;
+      console.log('[EarthPlanet] Cesium enabled, planet mesh hidden');
     } else {
-      // 禁用 Cesium: 恢复 Planet 球体的原始材质
-      if (this.originalMaterial) {
-        console.log('[EarthPlanet] Restoring original material:', this.originalMaterial);
-        mesh.material = this.originalMaterial;
-        mesh.material.needsUpdate = true;
-      } else {
-        console.warn('[EarthPlanet] No original material to restore');
-      }
-      
+      // 禁用 Cesium: 隐藏 Cesium canvas，显示 Planet 球体
+      console.log('[EarthPlanet] Disabling Cesium canvas overlay');
       this.cesiumExtension.setVisible(false);
-      this.cesiumExtension.setOpacity(0.0);
-      
-      console.log('[EarthPlanet] Cesium disabled, material restored');
+      mesh.visible = true;
+      console.log('[EarthPlanet] Cesium disabled, planet mesh visible');
     }
   }
   

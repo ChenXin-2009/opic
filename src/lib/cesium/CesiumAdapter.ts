@@ -79,10 +79,8 @@ export class CesiumAdapter {
   private viewer!: Cesium.Viewer;
   private container!: HTMLDivElement; // 改为 div 容器
   private cesiumCanvas!: HTMLCanvasElement; // Cesium 内部的 canvas
-  private canvasTexture!: THREE.CanvasTexture;
   private config: CesiumAdapterConfig;
   private isAvailable: boolean = true;
-  private needsTextureUpdate: boolean = false;
   private errorCallback?: (error: Error) => void;
   private performanceMonitor?: any;
   private logCallback?: (level: 'info' | 'warn' | 'error', message: string) => void;
@@ -125,9 +123,9 @@ export class CesiumAdapter {
     this.container.style.position = 'absolute';
     this.container.style.top = '0';
     this.container.style.left = '0';
-    this.container.style.pointerEvents = 'none'; // 不拦截鼠标事件
-    this.container.style.opacity = '0'; // 透明但仍然渲染（用作纹理源）
-    this.container.style.zIndex = '-1'; // 置于最底层
+    this.container.style.pointerEvents = 'none'; // 默认不拦截事件，只有 globe 区域才响应
+    this.container.style.zIndex = '2'; // 地球层在前
+    this.container.style.display = 'none'; // 默认隐藏，等待 setCesiumEnabled(true) 调用
     
     // 设置容器尺寸（CSS 尺寸，Cesium 需要这个来确定 canvas 大小）
     const width = window.innerWidth * (this.config.canvasResolutionScale ?? 1.0);
@@ -151,16 +149,20 @@ export class CesiumAdapter {
       timeline: false,
       navigationHelpButton: false,
       
+      // 透明背景：在构造时禁用 skyBox（必须在构造时传入，事后 show=false 不够）
+      skyBox: false,
+      skyAtmosphere: false,
+      
       // 渲染配置
       scene3DOnly: true,
       orderIndependentTranslucency: false,
       contextOptions: {
         webgl: {
-          alpha: false,
+          alpha: true, // 启用透明背景，让 Three.js 场景可见
           depth: true,
           stencil: false,
           antialias: true,
-          premultipliedAlpha: true,
+          premultipliedAlpha: false, // false 才能正确透明合成
           preserveDrawingBuffer: false,
           powerPreference: 'high-performance'
         }
@@ -197,34 +199,36 @@ export class CesiumAdapter {
     }
     
     // 禁用大气效果（由 Three.js 场景控制）
-    if (this.viewer.scene.skyAtmosphere) {
-      this.viewer.scene.skyAtmosphere.show = false;
-      console.log('[CesiumAdapter] Sky atmosphere disabled');
-    }
     if (this.viewer.scene.sun) {
       this.viewer.scene.sun.show = false;
-      console.log('[CesiumAdapter] Sun disabled');
     }
     if (this.viewer.scene.moon) {
       this.viewer.scene.moon.show = false;
-      console.log('[CesiumAdapter] Moon disabled');
-    }
-    if (this.viewer.scene.skyBox) {
-      this.viewer.scene.skyBox.show = false;
-      console.log('[CesiumAdapter] SkyBox disabled');
     }
     
-    // 设置场景背景色为黑色（而不是显示 skybox）
-    this.viewer.scene.backgroundColor = Cesium.Color.BLACK;
-    console.log('[CesiumAdapter] Scene background set to black');
+    // 透明背景关键设置：
+    // 1. HDR 必须禁用，否则会破坏透明背景
+    this.viewer.scene.highDynamicRange = false;
+    // 2. 背景色设为透明
+    this.viewer.scene.backgroundColor = Cesium.Color.TRANSPARENT;
+    // 3. 禁用地面大气层（会渲染到背景区域）
+    this.viewer.scene.globe.showGroundAtmosphere = false;
+    // 4. globe.baseColor 控制无瓦片区域底色，设为透明
+    this.viewer.scene.globe.baseColor = Cesium.Color.TRANSPARENT;
     
-    // 确保 globe 显示并且在前景
+    // 确保 globe 显示
     this.viewer.scene.globe.show = true;
     this.viewer.scene.globe.depthTestAgainstTerrain = false;
-    console.log('[CesiumAdapter] Globe show confirmed:', this.viewer.scene.globe.show);
+    console.log('[CesiumAdapter] Transparent background configured');
     
     // 获取 Cesium 内部创建的 canvas
     this.cesiumCanvas = this.viewer.scene.canvas;
+    
+    // 设置 canvas CSS 背景透明，确保 Three.js 场景可见
+    this.cesiumCanvas.style.background = 'transparent';
+    this.container.style.background = 'transparent';
+    // canvas 本身响应鼠标事件（Cesium 交互），但容器不拦截（UI 可穿透）
+    this.cesiumCanvas.style.pointerEvents = 'auto';
     
     // 手动调整 Cesium canvas 尺寸（Cesium 有时不能正确读取容器尺寸）
     const canvasWidth = window.innerWidth * (this.config.canvasResolutionScale ?? 1.0);
@@ -234,12 +238,6 @@ export class CesiumAdapter {
     
     // 通知 Cesium 场景尺寸已更改
     this.viewer.resize();
-    
-    // 创建 HTMLCanvasTexture（使用 Cesium 的 canvas）
-    this.canvasTexture = new THREE.CanvasTexture(this.cesiumCanvas);
-    this.canvasTexture.minFilter = THREE.LinearFilter;
-    this.canvasTexture.magFilter = THREE.LinearFilter;
-    this.canvasTexture.generateMipmaps = false;
     
     console.log('CesiumAdapter initialized successfully');
   }
@@ -270,9 +268,6 @@ export class CesiumAdapter {
       // 渲染 Cesium 场景到 Canvas
       this.viewer.render();
       
-      // 标记纹理需要更新
-      this.needsTextureUpdate = true;
-      
       // 性能监控
       if (this.performanceMonitor) {
         const renderTime = performance.now() - startTime;
@@ -281,24 +276,6 @@ export class CesiumAdapter {
     } catch (error) {
       this.log('error', `Render error: ${error}`);
       this.handleRenderError(error);
-    }
-  }
-  
-  /**
-   * 更新 Canvas 纹理
-   */
-  updateTexture(): void {
-    if (this.needsTextureUpdate && this.canvasTexture) {
-      const startTime = performance.now();
-      
-      this.canvasTexture.needsUpdate = true;
-      this.needsTextureUpdate = false;
-      
-      // 性能监控
-      if (this.performanceMonitor) {
-        const uploadTime = performance.now() - startTime;
-        this.performanceMonitor.recordTextureUploadTime?.(uploadTime);
-      }
     }
   }
   
@@ -336,17 +313,29 @@ export class CesiumAdapter {
   }
   
   /**
-   * 设置可见性
+   * 反向同步相机（Cesium → Three.js）
    */
-  setVisible(visible: boolean): void {
-    this.isAvailable = visible;
+  syncCameraFromCesium(threeCamera: THREE.PerspectiveCamera, earthPosition: THREE.Vector3): void {
+    if (!this.isAvailable) return;
+    
+    try {
+      CameraSynchronizer.syncFromCesium(this.viewer.camera, threeCamera, earthPosition);
+    } catch (error) {
+      console.error('[CesiumAdapter] Reverse camera sync error:', error);
+    }
   }
   
   /**
-   * 获取 Canvas 纹理
+   * 设置 Cesium canvas 可见性
    */
-  getTexture(): THREE.CanvasTexture {
-    return this.canvasTexture;
+  setCanvasVisible(visible: boolean): void {
+    console.log(`[CesiumAdapter] setCanvasVisible called with: ${visible}`);
+    if (this.container) {
+      this.container.style.display = visible ? 'block' : 'none';
+      console.log(`[CesiumAdapter] Container display set to: ${this.container.style.display}`);
+    }
+    // 注意：不要设置 isAvailable = visible，因为 isAvailable 用于标记 Cesium 是否初始化成功
+    // 可见性控制应该只影响 display 属性，不影响渲染逻辑
   }
   
   /**
@@ -496,11 +485,6 @@ export class CesiumAdapter {
     // 释放容器
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
-    }
-    
-    // 释放纹理
-    if (this.canvasTexture) {
-      this.canvasTexture.dispose();
     }
     
     // 移除事件监听器

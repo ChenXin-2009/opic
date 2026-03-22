@@ -13,28 +13,12 @@ import { CesiumAdapter, CesiumAdapterConfig } from './CesiumAdapter';
  */
 export class CesiumEarthExtension {
   private adapter: CesiumAdapter;
-  private compositeMaterial: THREE.MeshBasicMaterial;
-  private canvasTexture: THREE.CanvasTexture;
   private errorCallback?: (error: Error) => void;
   private logCallback?: (level: 'info' | 'warn' | 'error', message: string) => void;
   
   constructor(config: CesiumAdapterConfig) {
     // 创建 CesiumAdapter 实例
     this.adapter = new CesiumAdapter(config);
-    
-    // 获取 Canvas 纹理
-    this.canvasTexture = this.adapter.getTexture();
-    
-    // 创建合成材质（使用 Cesium Canvas 纹理）
-    this.compositeMaterial = new THREE.MeshBasicMaterial({
-      map: this.canvasTexture,
-      transparent: false, // 不透明
-      opacity: 1.0,
-      side: THREE.FrontSide,
-      depthWrite: true,
-      depthTest: true,
-      toneMapped: false // 禁用色调映射，保持原始颜色
-    });
     
     // 监听 CesiumAdapter 错误
     this.adapter.onError((error) => {
@@ -49,13 +33,6 @@ export class CesiumEarthExtension {
    */
   render(): void {
     this.adapter.render();
-  }
-  
-  /**
-   * 更新纹理
-   */
-  updateTexture(): void {
-    this.adapter.updateTexture();
   }
   
   /**
@@ -80,34 +57,17 @@ export class CesiumEarthExtension {
   }
   
   /**
-   * 设置透明度
+   * 反向同步相机（Cesium → Three.js）
    */
-  setOpacity(opacity: number): void {
-    this.compositeMaterial.opacity = Math.max(0, Math.min(1, opacity));
-    this.compositeMaterial.transparent = opacity < 1.0;
-    // 不要在这里修改 visible，让 setVisible 单独控制
-  }
-  
-  /**
-   * 获取透明度（用于测试）
-   */
-  getOpacity(): number {
-    return this.compositeMaterial.opacity;
+  syncCameraFromCesium(threeCamera: THREE.PerspectiveCamera, earthPosition: THREE.Vector3): void {
+    this.adapter.syncCameraFromCesium(threeCamera, earthPosition);
   }
   
   /**
    * 设置可见性
    */
   setVisible(visible: boolean): void {
-    this.adapter.setVisible(visible);
-    this.compositeMaterial.visible = visible;
-  }
-  
-  /**
-   * 获取合成材质
-   */
-  getMaterial(): THREE.Material {
-    return this.compositeMaterial;
+    this.adapter.setCanvasVisible(visible);
   }
   
   /**
@@ -138,10 +98,5 @@ export class CesiumEarthExtension {
   dispose(): void {
     // 清理 CesiumAdapter
     this.adapter.dispose();
-    
-    // 清理材质
-    this.compositeMaterial.dispose();
-    
-    // 注意：canvasTexture 由 CesiumAdapter 管理，不需要在这里释放
   }
 }
