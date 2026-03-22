@@ -148,7 +148,7 @@ export function SatelliteMenu({ lang = 'zh' }: SatelliteMenuProps) {
   const isOrbitVisible = selectedSatellite ? showOrbits.has(selectedSatellite) : false;
 
   return (
-    <>
+    <div style={{ position: 'relative' }}>
       {/* 卫星按钮 */}
       <button
         ref={buttonRef}
@@ -161,15 +161,14 @@ export function SatelliteMenu({ lang = 'zh' }: SatelliteMenuProps) {
           e.currentTarget.style.borderColor = ARKNIGHTS_CONFIG.colors.border;
           e.currentTarget.style.boxShadow = 'none';
         }}
-        className="fixed"
         style={{
-          top: '2rem',
-          right: 'calc(2rem + 120px)',
-          zIndex: 1001,
+          position: 'relative',
+          display: 'block',
+          width: '11rem',
+          height: '3rem',
           background: ARKNIGHTS_CONFIG.colors.dark,
           border: `2px solid ${ARKNIGHTS_CONFIG.colors.border}`,
           cursor: 'pointer',
-          padding: '8px 16px',
           transition: 'all 0.3s ease',
           color: ARKNIGHTS_CONFIG.colors.text,
           fontSize: '13px',
@@ -210,14 +209,17 @@ export function SatelliteMenu({ lang = 'zh' }: SatelliteMenuProps) {
         {lang === 'zh' ? '地球卫星' : 'EARTH SATELLITES'}
       </button>
 
-      {/* 卫星菜单面板 */}
+      {/* 卫星菜单面板 — 向左展开，固定在视口右侧 */}
       {isOpen && (
         <div
           ref={menuRef}
-          className="fixed z-50 satellite-menu-scrollbar"
+          className="satellite-menu-scrollbar"
           style={{
-            top: 'calc(2rem + 50px)',
-            right: 'calc(2rem + 120px)',
+            position: 'fixed',
+            right: 'calc(1.5rem + 11rem + 0.75rem)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 1050,
             width: '22rem',
             maxHeight: 'calc(100vh - 6rem)',
             background: ARKNIGHTS_CONFIG.colors.dark,
@@ -596,6 +598,6 @@ export function SatelliteMenu({ lang = 'zh' }: SatelliteMenuProps) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

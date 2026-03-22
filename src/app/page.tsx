@@ -213,6 +213,7 @@ export default function SolarSystemPage() {
       >
         <CesiumToggleButton onToggle={setCesiumEnabled} initialEnabled={cesiumEnabled} />
         <EarthLockButton onToggle={setEarthLockEnabled} initialEnabled={earthLockEnabled} />
+        <SatelliteMenu lang="zh" />
       </div>
       
       {/* Cesium 地图源切换面板（仅 Cesium 模式下显示） */}
@@ -220,9 +221,6 @@ export default function SolarSystemPage() {
       
       {/* Cesium 调试面板（开发测试） */}
       <CesiumDebugPanel earthPlanet={earthPlanet} camera={camera} />
-      
-      {/* 卫星菜单按钮 */}
-      <SatelliteMenu lang="zh" />
       
       {/* 主容器，漂浮模式下不需要留出Header高度空间 */}
       <div 
