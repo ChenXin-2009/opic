@@ -423,6 +423,8 @@ export class SceneManager {
     skybox.renderOrder = -1000; // 最先渲染（在最后面）
     skybox.userData.isSkybox = true;
     skybox.userData.fixedToCamera = true; // 标记为跟随相机
+    // 天空盒放在 Layer 1，用于 Cesium 模式下的两 pass 渲染
+    skybox.layers.set(1);
   }
   
   /**
@@ -1056,24 +1058,19 @@ export class SceneManager {
   setCesiumCompositeMode(enabled: boolean): void {
     this.cesiumCompositeMode = enabled;
     if (enabled) {
-      this.renderer.setClearColor(0x000000, 0); // 透明背景，让 Cesium 地球从下层透出来
+      this.renderer.setClearColor(0x000000, 0); // 透明背景
       this.scene.background = null;
-      // Cesium 模式：天空盒保持可见（银河系背景），但开启 depthTest + transparent
-      // 地球 depth-only mesh (renderOrder=-2000) 先写入深度缓冲
-      // 天空盒 (renderOrder=-1000) 渲染时：
-      //   - 地球区域：深度测试失败 → 像素丢弃（transparent=true 才会丢弃）→ Cesium 透出
-      //   - 其他区域：深度测试通过 → 正常渲染银河系背景
+      // 天空盒保持可见，由两 pass 渲染处理（见 render()）
       if (this.skybox) {
         this.skybox.visible = true;
         const mat = this.skybox.material as THREE.MeshBasicMaterial;
-        mat.depthTest = true;
-        mat.transparent = true;
+        mat.depthTest = false;
+        mat.transparent = false;
         mat.opacity = 1.0;
       }
     } else {
       this.renderer.setClearColor(0x000000, 1); // 不透明黑色
       this.scene.background = new THREE.Color(0x000000);
-      // 恢复天空盒默认状态（updateSkyboxOpacity 会根据距离自动管理）
       if (this.skybox) {
         this.skybox.visible = true;
         const mat = this.skybox.material as THREE.MeshBasicMaterial;
@@ -1164,7 +1161,31 @@ export class SceneManager {
    * ```
    */
   render(): void {
-    this.renderer.render(this.scene, this.camera);
+    if (this.cesiumCompositeMode && this.skybox) {
+      // Cesium 模式：两 pass 渲染
+      // Pass 1：只渲染天空盒（Layer 1），不清除颜色缓冲（autoClear=false）
+      //   天空盒渲染到 Three.js canvas，作为银河系背景
+      // Pass 2：清除深度缓冲，相机切回 Layer 0，渲染地球 depth-only mesh + 其他物体
+      //   地球 depth-only mesh 写入深度，让卫星等物体被正确遮挡
+      //   Three.js canvas 在地球区域是透明的（clearColor alpha=0），Cesium 从下层透出
+
+      // Pass 1：渲染天空盒
+      this.renderer.autoClear = false;
+      this.renderer.clear(); // 清除颜色+深度
+      this.camera.layers.set(1); // 只看 Layer 1（天空盒）
+      this.renderer.render(this.scene, this.camera);
+
+      // Pass 2：清除深度缓冲，渲染其他物体（不含天空盒）
+      this.renderer.clearDepth();
+      this.camera.layers.set(0); // 只看 Layer 0（其他物体，天空盒不在 Layer 0）
+      this.renderer.render(this.scene, this.camera);
+
+      // 恢复默认状态
+      this.renderer.autoClear = true;
+      this.camera.layers.enableAll(); // 恢复相机看所有层
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   /**
