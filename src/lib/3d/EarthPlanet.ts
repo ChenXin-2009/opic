@@ -100,8 +100,13 @@ export class EarthPlanet extends Planet {
   update(camera: THREE.Camera, deltaTime: number): void {
     if (this.cesiumExtension && this.cesiumEnabled) {
       if (camera instanceof THREE.PerspectiveCamera) {
+        const earthPos = this.getMesh().position;
+        const distAU = camera.position.distanceTo(earthPos);
+        // 超过 0.1 AU（约 1500 万 km）时跳过 Cesium 渲染，避免极远距离下浮点溢出
+        if (distAU > 0.1) return;
+
         // 1. 将 Three.js 相机同步到 Cesium（OrbitControls 驱动，Cesium 跟随）
-        this.cesiumExtension.syncCamera(camera, this.getMesh().position);
+        this.cesiumExtension.syncCamera(camera, earthPos);
         
         // 2. 渲染 Cesium 场景
         this.cesiumExtension.render();

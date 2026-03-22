@@ -115,6 +115,11 @@ export class CameraSynchronizer {
 
     const directionCesium = new Cesium.Cartesian3(fDirX, fDirY, fDirZ);
     const upCesium = new Cesium.Cartesian3(fUpX, fUpY, fUpZ);
+
+    // 安全检查：方向/上向量不能是零向量或含 NaN（会导致 Cesium normalize 崩溃）
+    const dirLen = Math.sqrt(fDirX*fDirX + fDirY*fDirY + fDirZ*fDirZ);
+    const upLen  = Math.sqrt(fUpX*fUpX  + fUpY*fUpY  + fUpZ*fUpZ);
+    if (!isFinite(dirLen) || dirLen < 1e-10 || !isFinite(upLen) || upLen < 1e-10) return;
     
     // 5. 设置 Cesium 相机方向（归一化）
     cesiumCamera.direction = Cesium.Cartesian3.normalize(directionCesium, new Cesium.Cartesian3());
