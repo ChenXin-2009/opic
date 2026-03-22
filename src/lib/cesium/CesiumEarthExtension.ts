@@ -71,6 +71,13 @@ export class CesiumEarthExtension {
   }
   
   /**
+   * 切换影像图层
+   */
+  setImageryProvider(provider: any): void {
+    this.adapter.setImageryProvider(provider);
+  }
+
+  /**
    * 获取瓦片加载状态
    */
   getTileLoadingStats(): { loaded: number; loading: number } {

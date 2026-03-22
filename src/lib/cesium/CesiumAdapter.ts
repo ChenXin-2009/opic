@@ -504,6 +504,19 @@ export class CesiumAdapter {
   }
   
   /**
+   * 运行时切换影像图层
+   */
+  setImageryProvider(provider: Cesium.ImageryProvider): void {
+    if (!this.isAvailable || !this.viewer) return;
+    try {
+      this.viewer.imageryLayers.removeAll();
+      this.viewer.imageryLayers.addImageryProvider(provider);
+    } catch (e) {
+      console.warn('[CesiumAdapter] setImageryProvider failed:', e);
+    }
+  }
+
+  /**
    * 清理资源
    */
   dispose(): void {

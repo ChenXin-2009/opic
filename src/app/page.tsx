@@ -10,6 +10,7 @@ import { HEADER_CONFIG } from "@/lib/config/visualConfig";
 import EphemerisStatusPanel from "@/components/EphemerisStatusPanel";
 import CesiumDebugPanel from "@/components/debug/CesiumDebugPanel";
 import CesiumToggleButton from "@/components/CesiumToggleButton";
+import CesiumMapSourcePanel from "@/components/cesium/CesiumMapSourcePanel";
 
 /**
  * Info button component for top-right corner.
@@ -166,6 +167,9 @@ export default function SolarSystemPage() {
       
       {/* Cesium 切换按钮（产品功能） */}
       <CesiumToggleButton onToggle={setCesiumEnabled} initialEnabled={cesiumEnabled} />
+      
+      {/* Cesium 地图源切换面板（仅 Cesium 模式下显示） */}
+      <CesiumMapSourcePanel earthPlanet={earthPlanet} visible={cesiumEnabled} />
       
       {/* Cesium 调试面板（开发测试） */}
       <CesiumDebugPanel earthPlanet={earthPlanet} camera={camera} />
