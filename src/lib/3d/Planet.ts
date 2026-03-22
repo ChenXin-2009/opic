@@ -1435,6 +1435,13 @@ export class Planet {
   }
 
   /**
+   * 获取当前帧的旋转四元数（用于地球锁定相机模式）
+   */
+  getRotationQuaternion(): THREE.Quaternion {
+    return this.mesh.quaternion.clone();
+  }
+
+  /**
    * 获取自转轴倾角（度）
    */
   getAxialTilt(): number {

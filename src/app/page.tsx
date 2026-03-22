@@ -11,6 +11,7 @@ import EphemerisStatusPanel from "@/components/EphemerisStatusPanel";
 import CesiumDebugPanel from "@/components/debug/CesiumDebugPanel";
 import CesiumToggleButton from "@/components/CesiumToggleButton";
 import CesiumMapSourcePanel from "@/components/cesium/CesiumMapSourcePanel";
+import EarthLockButton from "@/components/EarthLockButton";
 
 /**
  * Info button component for top-right corner.
@@ -144,6 +145,7 @@ export default function SolarSystemPage() {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isEphemerisStatusOpen, setIsEphemerisStatusOpen] = useState(false);
   const [cesiumEnabled, setCesiumEnabled] = useState(false); // 默认禁用 Cesium
+  const [earthLockEnabled, setEarthLockEnabled] = useState(false);
   const [earthPlanet, setEarthPlanet] = useState<any>(null);
   const [camera, setCamera] = useState<any>(null);
 
@@ -168,6 +170,9 @@ export default function SolarSystemPage() {
       {/* Cesium 切换按钮（产品功能） */}
       <CesiumToggleButton onToggle={setCesiumEnabled} initialEnabled={cesiumEnabled} />
       
+      {/* 地球锁定相机模式按钮 */}
+      <EarthLockButton onToggle={setEarthLockEnabled} initialEnabled={earthLockEnabled} />
+      
       {/* Cesium 地图源切换面板（仅 Cesium 模式下显示） */}
       <CesiumMapSourcePanel earthPlanet={earthPlanet} visible={cesiumEnabled} />
       
@@ -189,7 +194,8 @@ export default function SolarSystemPage() {
       >
         <div className="flex-1 relative min-h-0" style={{ isolation: 'isolate', maxHeight: '100%' }}>
           <SolarSystemCanvas3D 
-            cesiumEnabled={cesiumEnabled} 
+            cesiumEnabled={cesiumEnabled}
+            earthLockEnabled={earthLockEnabled}
             onEarthPlanetReady={setEarthPlanet}
             onCameraReady={setCamera}
           />

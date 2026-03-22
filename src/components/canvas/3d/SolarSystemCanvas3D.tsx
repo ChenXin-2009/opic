@@ -220,9 +220,10 @@ interface SolarSystemCanvas3DProps {
   cesiumEnabled?: boolean;
   onEarthPlanetReady?: (earthPlanet: any) => void;
   onCameraReady?: (camera: any) => void;
+  earthLockEnabled?: boolean;
 }
 
-export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnabled = false, onEarthPlanetReady, onCameraReady }: SolarSystemCanvas3DProps = {}) {
+export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnabled = false, onEarthPlanetReady, onCameraReady, earthLockEnabled = false }: SolarSystemCanvas3DProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneManagerRef = useRef<SceneManager | null>(null);
   const cameraControllerRef = useRef<CameraController | null>(null);
@@ -238,6 +239,8 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
   const satelliteLayerRef = useRef<SatelliteLayer | null>(null);
   // cesiumEnabled ref — 让动画循环（闭包）能读到最新值
   const cesiumEnabledRef = useRef<boolean>(cesiumEnabled);
+  // earthLockEnabled ref — 让动画循环能读到最新值
+  const earthLockEnabledRef = useRef<boolean>(earthLockEnabled);
   
   // 卫星跟随状态跟踪
   const isTrackingSatelliteRef = useRef<boolean>(false);
@@ -264,7 +267,6 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
   React.useEffect(() => {
     // 同步 ref，让动画循环闭包能读到最新值
     cesiumEnabledRef.current = cesiumEnabled;
-
     // 切换 Three.js 背景透明度（Cesium 模式下透明，让 Cesium 地球从下层透出来）
     if (sceneManagerRef.current) {
       sceneManagerRef.current.setCesiumCompositeMode(cesiumEnabled);
@@ -287,6 +289,25 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
       }
     }
   }, [cesiumEnabled]);
+
+  // 监听 earthLockEnabled 变化，切换地球锁定相机模式
+  React.useEffect(() => {
+    earthLockEnabledRef.current = earthLockEnabled;
+    if (!cameraControllerRef.current) return;
+
+    const earthPlanet = planetsRef.current.get('earth');
+    if (!earthPlanet) return;
+
+    if (earthLockEnabled) {
+      cameraControllerRef.current.setEarthLockMode(
+        true,
+        () => earthPlanet.getRotationQuaternion(),
+        () => earthPlanet.getMesh().position.clone()
+      );
+    } else {
+      cameraControllerRef.current.setEarthLockMode(false);
+    }
+  }, [earthLockEnabled]);
 
   // 初始化场景 - 使用 useLayoutEffect 确保 DOM 准备好
   useLayoutEffect(() => {
