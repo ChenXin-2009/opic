@@ -788,6 +788,7 @@ export class SceneManager {
       if (this.skybox) this.skybox.visible = false;
       return;
     }
+    const config = SCALE_VIEW_CONFIG;
     
     // 0.7 光年 = 0.7 * LIGHT_YEAR_TO_AU
     const fadeEnd = 0.7 * 63241.077; // 约 44269 AU
