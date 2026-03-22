@@ -28,69 +28,93 @@ export class CameraSynchronizer {
   static syncViewMatrix(
     threeCamera: THREE.PerspectiveCamera,
     cesiumCamera: Cesium.Camera,
-    earthPosition: THREE.Vector3
+    earthPosition: THREE.Vector3,
+    currentTime?: Cesium.JulianDate
   ): void {
-    // 1. 转换相机位置为 ECEF 坐标（米）
-    const cameraECEF = CoordinateTransformer.solarSystemToECEF(
-      threeCamera.position,
-      earthPosition
-    );
-    
-    // 2. 设置 Cesium 相机位置
-    cesiumCamera.position = cameraECEF;
-    
-    // 3. 获取 Three.js 相机的方向向量（在世界空间）
-    const directionThree = new THREE.Vector3();
-    const upThree = new THREE.Vector3();
-    const rightThree = new THREE.Vector3();
-    
-    // 获取相机的世界方向（相机看向的方向）
-    threeCamera.getWorldDirection(directionThree);
-    
-    // 获取相机的世界上向量
-    upThree.set(0, 1, 0).applyQuaternion(threeCamera.quaternion).normalize();
-    
-    // 获取相机的世界右向量（用于验证）
-    rightThree.crossVectors(directionThree, upThree).normalize();
-    
-    // 4. 坐标系转换：Three.js 黄道坐标系 → Cesium ECEF（赤道坐标系）
-    // 绕 X 轴旋转 -ε（ε = 黄赤交角 23.4393°），将黄道北极 Z 旋转到赤道北极：
+    // 完整变换链：黄道惯性系 → 赤道惯性系(ICRF) → ECEF(ITRF)
+    //
+    // 步骤一：黄道 → 赤道惯性系（绕 X 轴旋转 -ε，ε = 黄赤交角 23.4393°）
     //   x' = x
     //   y' = y * cos(ε) - z * sin(ε)
     //   z' = y * sin(ε) + z * cos(ε)
+    //
+    // 步骤二：赤道惯性系(ICRF) → ECEF(ITRF)（绕 Z 轴旋转 -GMST）
+    //   使用 Cesium.Transforms.computeIcrfToFixedMatrix 精确计算
+    //   GMST 随时间变化，必须用仿真当前时间计算
+
     const cosObl = Math.cos(23.4393 * Math.PI / 180);
     const sinObl = Math.sin(23.4393 * Math.PI / 180);
 
-    // 黄道 → 赤道
-    let dDirX = directionThree.x;
-    let dDirY = directionThree.y * cosObl - directionThree.z * sinObl;
-    let dDirZ = directionThree.y * sinObl + directionThree.z * cosObl;
-    let dUpX = upThree.x;
-    let dUpY = upThree.y * cosObl - upThree.z * sinObl;
-    let dUpZ = upThree.y * sinObl + upThree.z * cosObl;
+    // 获取 ICRF → ECEF 旋转矩阵（主要是绕 Z 轴的 GMST 旋转）
+    const icrfToFixed = new Cesium.Matrix3();
+    const time = currentTime ?? (cesiumCamera.frustum ? Cesium.JulianDate.now() : undefined);
+    let hasIcrfMatrix = false;
+    if (time) {
+      const result = Cesium.Transforms.computeIcrfToFixedMatrix(time, icrfToFixed);
+      hasIcrfMatrix = !!result;
+    }
 
-    // 应用调试旋转偏移（与位置转换保持一致）
+    // 辅助函数：把一个向量经过完整变换链转到 ECEF
+    const transformToECEF = (v: THREE.Vector3): [number, number, number] => {
+      // 步骤一：黄道 → 赤道惯性系
+      const ix = v.x;
+      const iy = v.y * cosObl - v.z * sinObl;
+      const iz = v.y * sinObl + v.z * cosObl;
+
+      if (hasIcrfMatrix) {
+        // 步骤二：赤道惯性系 → ECEF（用 Cesium 精确矩阵）
+        const inertial = new Cesium.Cartesian3(ix, iy, iz);
+        const ecef = Cesium.Matrix3.multiplyByVector(icrfToFixed, inertial, new Cesium.Cartesian3());
+        return [ecef.x, ecef.y, ecef.z];
+      }
+      // fallback：无时间信息时直接用惯性系坐标
+      return [ix, iy, iz];
+    };
+
+    // 1. 转换相机位置（黄道 → ECEF）
+    const localPosition = threeCamera.position.clone().sub(earthPosition);
+    const [px, py, pz] = transformToECEF(localPosition);
+    const cameraECEF = new Cesium.Cartesian3(
+      px * 149597870700,
+      py * 149597870700,
+      pz * 149597870700
+    );
+    cesiumCamera.position = cameraECEF;
+
+    // 2. 获取 Three.js 相机方向向量
+    const directionThree = new THREE.Vector3();
+    const upThree = new THREE.Vector3();
+    threeCamera.getWorldDirection(directionThree);
+    upThree.set(0, 1, 0).applyQuaternion(threeCamera.quaternion).normalize();
+
+    // 3. 转换方向和上向量（黄道 → ECEF）
+    const [dDirX, dDirY, dDirZ] = transformToECEF(directionThree);
+    const [dUpX, dUpY, dUpZ] = transformToECEF(upThree);
+
+    // 4. 应用调试旋转偏移
+    let fDirX = dDirX, fDirY = dDirY, fDirZ = dDirZ;
+    let fUpX = dUpX, fUpY = dUpY, fUpZ = dUpZ;
     if (debugRotationOffset.x !== 0) {
       const rx = debugRotationOffset.x * Math.PI / 180;
       const cy = Math.cos(rx), sy = Math.sin(rx);
-      [dDirY, dDirZ] = [dDirY * cy - dDirZ * sy, dDirY * sy + dDirZ * cy];
-      [dUpY, dUpZ] = [dUpY * cy - dUpZ * sy, dUpY * sy + dUpZ * cy];
+      [fDirY, fDirZ] = [fDirY * cy - fDirZ * sy, fDirY * sy + fDirZ * cy];
+      [fUpY, fUpZ] = [fUpY * cy - fUpZ * sy, fUpY * sy + fUpZ * cy];
     }
     if (debugRotationOffset.y !== 0) {
       const ry = debugRotationOffset.y * Math.PI / 180;
       const cx = Math.cos(ry), sx = Math.sin(ry);
-      [dDirX, dDirZ] = [dDirX * cx + dDirZ * sx, -dDirX * sx + dDirZ * cx];
-      [dUpX, dUpZ] = [dUpX * cx + dUpZ * sx, -dUpX * sx + dUpZ * cx];
+      [fDirX, fDirZ] = [fDirX * cx + fDirZ * sx, -fDirX * sx + fDirZ * cx];
+      [fUpX, fUpZ] = [fUpX * cx + fUpZ * sx, -fUpX * sx + fUpZ * cx];
     }
     if (debugRotationOffset.z !== 0) {
       const rz = debugRotationOffset.z * Math.PI / 180;
       const cz = Math.cos(rz), sz = Math.sin(rz);
-      [dDirX, dDirY] = [dDirX * cz - dDirY * sz, dDirX * sz + dDirY * cz];
-      [dUpX, dUpY] = [dUpX * cz - dUpY * sz, dUpX * sz + dUpY * cz];
+      [fDirX, fDirY] = [fDirX * cz - fDirY * sz, fDirX * sz + fDirY * cz];
+      [fUpX, fUpY] = [fUpX * cz - fUpY * sz, fUpX * sz + fUpY * cz];
     }
 
-    const directionCesium = new Cesium.Cartesian3(dDirX, dDirY, dDirZ);
-    const upCesium = new Cesium.Cartesian3(dUpX, dUpY, dUpZ);
+    const directionCesium = new Cesium.Cartesian3(fDirX, fDirY, fDirZ);
+    const upCesium = new Cesium.Cartesian3(fUpX, fUpY, fUpZ);
     
     // 5. 设置 Cesium 相机方向（归一化）
     cesiumCamera.direction = Cesium.Cartesian3.normalize(directionCesium, new Cesium.Cartesian3());
@@ -110,10 +134,10 @@ export class CameraSynchronizer {
         cesiumPos: { x: cameraECEF.x.toFixed(0), y: cameraECEF.y.toFixed(0), z: cameraECEF.z.toFixed(0) },
         cesiumDir: { x: cesiumCamera.direction.x.toFixed(3), y: cesiumCamera.direction.y.toFixed(3), z: cesiumCamera.direction.z.toFixed(3) },
         cesiumUp: { x: cesiumCamera.up.x.toFixed(3), y: cesiumCamera.up.y.toFixed(3), z: cesiumCamera.up.z.toFixed(3) },
-        cesiumRight: { x: rightCesium.x.toFixed(3), y: rightCesium.y.toFixed(3), z: rightCesium.z.toFixed(3) }
+        hasIcrfMatrix,
       });
     }
-    
+
     // 同步 FOV：将 Three.js 的垂直 FOV 转换为水平 FOV 后设置给 Cesium
     // Three.js camera.fov 是垂直 FOV（角度）
     // Cesium PerspectiveFrustum.fov 是水平 FOV（弧度）

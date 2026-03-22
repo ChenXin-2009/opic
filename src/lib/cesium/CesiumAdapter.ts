@@ -315,7 +315,7 @@ export class CesiumAdapter {
     if (!this.isAvailable) return;
     
     try {
-      CameraSynchronizer.syncViewMatrix(threeCamera, this.viewer.camera, earthPosition);
+      CameraSynchronizer.syncViewMatrix(threeCamera, this.viewer.camera, earthPosition, this.viewer.clock.currentTime);
     } catch (error) {
       console.error('[CesiumAdapter] Camera sync error:', error);
     }
