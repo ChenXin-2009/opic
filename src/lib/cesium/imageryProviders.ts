@@ -1,32 +1,79 @@
 /**
  * Cesium 影像图层源定义
- * 所有免费、无需 API key 的地图源
+ * 包含免费地图源和 NASA GIBS 实时卫星图层
  */
+
+export type ImageryCategory = 'general' | 'nasa';
 
 export interface ImagerySourceDef {
   id: string;
   name: string;
   description: string;
-  /** 创建 Cesium ImageryProvider 的工厂函数（懒加载，避免 SSR 问题） */
-  create: () => Promise<any>;
+  category: ImageryCategory;
+  /** 缩略图 URL（静态预览图） */
+  previewUrl: string;
+  /** 是否支持日期参数（NASA GIBS 时序图层） */
+  temporal?: boolean;
+  /** 创建 Cesium ImageryProvider 的工厂函数 */
+  create: (date?: string) => Promise<any>;
+}
+
+// NASA GIBS WMTS 基础配置
+// 端点：https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi
+// TileMatrixSet：GoogleMapsCompatible_Level9（大多数图层）
+const GIBS_BASE = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi';
+
+function gibsWmts(layer: string, format: string, matrixSet = 'GoogleMapsCompatible_Level9', maxLevel = 9) {
+  return async (date?: string) => {
+    const Cesium = await import('cesium');
+    const params: Record<string, string> = {
+      SERVICE: 'WMTS',
+      REQUEST: 'GetTile',
+      VERSION: '1.0.0',
+      LAYER: layer,
+      STYLE: 'default',
+      TILEMATRIXSET: matrixSet,
+      FORMAT: format,
+    };
+    if (date) params.TIME = date;
+
+    return new Cesium.WebMapTileServiceImageryProvider({
+      url: GIBS_BASE,
+      layer,
+      style: 'default',
+      format,
+      tileMatrixSetID: matrixSet,
+      maximumLevel: maxLevel,
+      tilingScheme: new Cesium.WebMercatorTilingScheme(),
+      // 时间参数通过 customTags 注入
+      ...(date ? { times: Cesium.TimeIntervalCollection.fromIso8601({
+        iso8601: `${date}/${date}/P1D`,
+        dataCallback: () => ({ Time: date }),
+      }) } : {}),
+    });
+  };
+}
+
+/** 获取今天的 ISO 日期字符串 */
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** 获取 N 天前的 ISO 日期字符串（GIBS 有 1-2 天延迟） */
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
 }
 
 export const IMAGERY_SOURCES: ImagerySourceDef[] = [
-  {
-    id: 'osm',
-    name: 'OpenStreetMap',
-    description: '开源街道地图',
-    create: async () => {
-      const Cesium = await import('cesium');
-      return new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/',
-      });
-    },
-  },
+  // ── 通用地图源 ──────────────────────────────────────────────
   {
     id: 'esri-world-imagery',
     name: 'ESRI 卫星影像',
     description: '高分辨率卫星图像',
+    category: 'general',
+    previewUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/2',
     create: async () => {
       const Cesium = await import('cesium');
       return new Cesium.UrlTemplateImageryProvider({
@@ -36,9 +83,24 @@ export const IMAGERY_SOURCES: ImagerySourceDef[] = [
     },
   },
   {
+    id: 'osm',
+    name: 'OpenStreetMap',
+    description: '开源街道地图',
+    category: 'general',
+    previewUrl: 'https://tile.openstreetmap.org/2/2/1.png',
+    create: async () => {
+      const Cesium = await import('cesium');
+      return new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://tile.openstreetmap.org/',
+      });
+    },
+  },
+  {
     id: 'esri-world-street',
     name: 'ESRI 街道地图',
     description: '详细街道和地名',
+    category: 'general',
+    previewUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/2/1/2',
     create: async () => {
       const Cesium = await import('cesium');
       return new Cesium.UrlTemplateImageryProvider({
@@ -48,47 +110,11 @@ export const IMAGERY_SOURCES: ImagerySourceDef[] = [
     },
   },
   {
-    id: 'esri-natgeo',
-    name: 'ESRI 国家地理',
-    description: '国家地理风格地图',
-    create: async () => {
-      const Cesium = await import('cesium');
-      return new Cesium.UrlTemplateImageryProvider({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
-        maximumLevel: 16,
-      });
-    },
-  },
-  {
-    id: 'stamen-toner',
-    name: 'Stamen Toner',
-    description: '黑白高对比度地图',
-    create: async () => {
-      const Cesium = await import('cesium');
-      return new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tiles.stadiamaps.com/tiles/stamen_toner/{z}/{x}/{y}.png',
-        maximumLevel: 20,
-        credit: 'Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
-      });
-    },
-  },
-  {
-    id: 'stamen-terrain',
-    name: 'Stamen Terrain',
-    description: '地形晕渲地图',
-    create: async () => {
-      const Cesium = await import('cesium');
-      return new Cesium.UrlTemplateImageryProvider({
-        url: 'https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.jpg',
-        maximumLevel: 18,
-        credit: 'Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
-      });
-    },
-  },
-  {
     id: 'carto-dark',
     name: 'CartoDB 暗色',
     description: '深色背景地图',
+    category: 'general',
+    previewUrl: 'https://a.basemaps.cartocdn.com/dark_all/2/2/1.png',
     create: async () => {
       const Cesium = await import('cesium');
       return new Cesium.UrlTemplateImageryProvider({
@@ -100,17 +126,145 @@ export const IMAGERY_SOURCES: ImagerySourceDef[] = [
     },
   },
   {
-    id: 'carto-light',
-    name: 'CartoDB 亮色',
-    description: '浅色简洁地图',
+    id: 'esri-natgeo',
+    name: 'ESRI 国家地理',
+    description: '国家地理风格地图',
+    category: 'general',
+    previewUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/2/1/2',
     create: async () => {
       const Cesium = await import('cesium');
       return new Cesium.UrlTemplateImageryProvider({
-        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        subdomains: ['a', 'b', 'c', 'd'],
-        maximumLevel: 19,
-        credit: '© OpenStreetMap contributors © CARTO',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+        maximumLevel: 16,
+      });
+    },
+  },
+
+  // ── NASA GIBS 实时卫星图层 ──────────────────────────────────
+  {
+    id: 'nasa-modis-terra',
+    name: 'MODIS Terra 真彩色',
+    description: `NASA 每日卫星真彩色图像（${daysAgo(2)}）`,
+    category: 'nasa',
+    temporal: true,
+    previewUrl: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_CorrectedReflectance_TrueColor&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible_Level9&TILEMATRIX=2&TILEROW=1&TILECOL=2&FORMAT=image%2Fjpeg&TIME=${daysAgo(2)}`,
+    create: async (date = daysAgo(2)) => {
+      const Cesium = await import('cesium');
+      return new Cesium.WebMapTileServiceImageryProvider({
+        url: `${GIBS_BASE}?TIME=${date}`,
+        layer: 'MODIS_Terra_CorrectedReflectance_TrueColor',
+        style: 'default',
+        format: 'image/jpeg',
+        tileMatrixSetID: 'GoogleMapsCompatible_Level9',
+        maximumLevel: 9,
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+      });
+    },
+  },
+  {
+    id: 'nasa-modis-aqua',
+    name: 'MODIS Aqua 真彩色',
+    description: `NASA Aqua 卫星每日图像（${daysAgo(2)}）`,
+    category: 'nasa',
+    temporal: true,
+    previewUrl: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Aqua_CorrectedReflectance_TrueColor&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible_Level9&TILEMATRIX=2&TILEROW=1&TILECOL=2&FORMAT=image%2Fjpeg&TIME=${daysAgo(2)}`,
+    create: async (date = daysAgo(2)) => {
+      const Cesium = await import('cesium');
+      return new Cesium.WebMapTileServiceImageryProvider({
+        url: `${GIBS_BASE}?TIME=${date}`,
+        layer: 'MODIS_Aqua_CorrectedReflectance_TrueColor',
+        style: 'default',
+        format: 'image/jpeg',
+        tileMatrixSetID: 'GoogleMapsCompatible_Level9',
+        maximumLevel: 9,
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+      });
+    },
+  },
+  {
+    id: 'nasa-viirs-nighttime',
+    name: 'VIIRS 夜间灯光',
+    description: 'NASA 夜间城市灯光图像',
+    category: 'nasa',
+    temporal: false,
+    previewUrl: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=VIIRS_Black_Marble&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible_Level8&TILEMATRIX=2&TILEROW=1&TILECOL=2&FORMAT=image%2Fpng&TIME=2016-01-01`,
+    create: async () => {
+      const Cesium = await import('cesium');
+      return new Cesium.WebMapTileServiceImageryProvider({
+        url: `${GIBS_BASE}?TIME=2016-01-01`,
+        layer: 'VIIRS_Black_Marble',
+        style: 'default',
+        format: 'image/png',
+        tileMatrixSetID: 'GoogleMapsCompatible_Level8',
+        maximumLevel: 8,
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+      });
+    },
+  },
+  {
+    id: 'nasa-modis-fires',
+    name: 'MODIS 火点检测',
+    description: `NASA 每日火灾热点（叠加层，${daysAgo(1)}）`,
+    category: 'nasa',
+    temporal: true,
+    previewUrl: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_Thermal_Anomalies_Day&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible_Level9&TILEMATRIX=2&TILEROW=1&TILECOL=2&FORMAT=image%2Fpng&TIME=${daysAgo(1)}`,
+    create: async (date = daysAgo(1)) => {
+      const Cesium = await import('cesium');
+      // 火点是叠加层，先加卫星底图再叠加火点
+      return new Cesium.WebMapTileServiceImageryProvider({
+        url: `${GIBS_BASE}?TIME=${date}`,
+        layer: 'MODIS_Terra_Thermal_Anomalies_Day',
+        style: 'default',
+        format: 'image/png',
+        tileMatrixSetID: 'GoogleMapsCompatible_Level9',
+        maximumLevel: 9,
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+      });
+    },
+  },
+  {
+    id: 'nasa-viirs-dnb',
+    name: 'VIIRS 昼夜波段',
+    description: `VIIRS 昼夜波段每日图像（${daysAgo(2)}）`,
+    category: 'nasa',
+    temporal: true,
+    previewUrl: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=VIIRS_SNPP_DayNightBand_ENCC&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible_Level8&TILEMATRIX=2&TILEROW=1&TILECOL=2&FORMAT=image%2Fpng&TIME=${daysAgo(2)}`,
+    create: async (date = daysAgo(2)) => {
+      const Cesium = await import('cesium');
+      return new Cesium.WebMapTileServiceImageryProvider({
+        url: `${GIBS_BASE}?TIME=${date}`,
+        layer: 'VIIRS_SNPP_DayNightBand_ENCC',
+        style: 'default',
+        format: 'image/png',
+        tileMatrixSetID: 'GoogleMapsCompatible_Level8',
+        maximumLevel: 8,
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+      });
+    },
+  },
+  {
+    id: 'nasa-modis-snow',
+    name: 'MODIS 积雪覆盖',
+    description: `每日积雪范围（${daysAgo(2)}）`,
+    category: 'nasa',
+    temporal: true,
+    previewUrl: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=MODIS_Terra_Snow_Cover&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible_Level8&TILEMATRIX=2&TILEROW=1&TILECOL=2&FORMAT=image%2Fpng&TIME=${daysAgo(2)}`,
+    create: async (date = daysAgo(2)) => {
+      const Cesium = await import('cesium');
+      return new Cesium.WebMapTileServiceImageryProvider({
+        url: `${GIBS_BASE}?TIME=${date}`,
+        layer: 'MODIS_Terra_Snow_Cover',
+        style: 'default',
+        format: 'image/png',
+        tileMatrixSetID: 'GoogleMapsCompatible_Level8',
+        maximumLevel: 8,
+        tilingScheme: new Cesium.WebMercatorTilingScheme(),
       });
     },
   },
 ];
+
+export const IMAGERY_CATEGORIES: Record<ImageryCategory, string> = {
+  general: '通用地图',
+  nasa: 'NASA 实时卫星',
+};
