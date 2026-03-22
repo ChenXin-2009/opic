@@ -54,21 +54,22 @@ export class CameraSynchronizer {
     rightThree.crossVectors(directionThree, upThree).normalize();
     
     // 4. 坐标系转换：Three.js (Y-up, Z-backward) → Cesium ECEF (Z-up, Y-forward)
-    // Three.js: X-right, Y-up, Z-backward (相机看向 -Z)
-    // Cesium ECEF: X-right, Y-forward, Z-up
-    // 转换公式：
-    //   Cesium.x = Three.x
-    //   Cesium.y = Three.z
-    //   Cesium.z = Three.y
+    // Three.js: X-right, Y-up, Z-backward  右手系
+    // Cesium ECEF: X-right(本初子午线), Y-forward(东经90°), Z-up(北极)  右手系
+    //
+    // 保持右手系手性的正确映射：
+    //   Cesium.x =  Three.x
+    //   Cesium.y = -Three.z   ← 负号保持手性
+    //   Cesium.z =  Three.y
     const directionCesium = new Cesium.Cartesian3(
       directionThree.x,
-      directionThree.z,
+      -directionThree.z,
       directionThree.y
     );
     
     const upCesium = new Cesium.Cartesian3(
       upThree.x,
-      upThree.z,
+      -upThree.z,
       upThree.y
     );
     
@@ -122,22 +123,23 @@ export class CameraSynchronizer {
     threeCamera.position.copy(cameraSolarSystem);
     
     // 3. 坐标系转换：Cesium ECEF (Z-up, Y-forward) → Three.js (Y-up, Z-backward)
-    // Cesium ECEF: X-right, Y-forward, Z-up
-    // Three.js: X-right, Y-up, Z-backward (相机看向 -Z)
-    // 转换公式：
-    //   Three.x = Cesium.x
-    //   Three.y = Cesium.z
-    //   Three.z = Cesium.y
+    // Cesium ECEF: X-right(本初子午线), Y-forward(东经90°), Z-up(北极)  右手系
+    // Three.js:    X-right,             Y-up,               Z-backward   右手系
+    //
+    // 保持右手系手性的正确映射：
+    //   Three.x =  Cesium.x
+    //   Three.y =  Cesium.z
+    //   Three.z = -Cesium.y   ← 负号保持手性，否则左右镜像
     const directionThree = new THREE.Vector3(
       cesiumCamera.direction.x,
       cesiumCamera.direction.z,
-      cesiumCamera.direction.y
+      -cesiumCamera.direction.y
     ).normalize();
     
     const upThree = new THREE.Vector3(
       cesiumCamera.up.x,
       cesiumCamera.up.z,
-      cesiumCamera.up.y
+      -cesiumCamera.up.y
     ).normalize();
     
     // 4. 计算 Three.js 相机的目标点（相机位置 + 方向）

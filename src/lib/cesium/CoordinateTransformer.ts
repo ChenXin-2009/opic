@@ -44,14 +44,15 @@ export class CoordinateTransformer {
     const localPosition = cameraPosition.clone().sub(earthPosition);
     
     // 2. 坐标系转换：Three.js (Y-up) → Cesium ECEF (Z-up)
-    // Three.js: X-right, Y-up, Z-backward
-    // Cesium ECEF: X-right, Y-forward, Z-up
-    // 转换公式：
-    //   Cesium.x = Three.x
-    //   Cesium.y = Three.z
-    //   Cesium.z = Three.y
+    // Three.js: X-right, Y-up, Z-backward  右手系
+    // Cesium ECEF: X-right(本初子午线), Y-forward(东经90°), Z-up(北极)  右手系
+    //
+    // 保持右手系手性的正确映射：
+    //   Cesium.x =  Three.x
+    //   Cesium.y = -Three.z   ← 负号保持手性
+    //   Cesium.z =  Three.y
     const localCesiumX = localPosition.x;
-    const localCesiumY = localPosition.z;
+    const localCesiumY = -localPosition.z;
     const localCesiumZ = localPosition.y;
     
     // 3. 转换单位：AU → 米
@@ -111,10 +112,14 @@ export class CoordinateTransformer {
     ecef: Cesium.Cartesian3,
     earthPosition: THREE.Vector3
   ): THREE.Vector3 {
-    // 1. 坐标系转换：Cesium ECEF (Z-up) → Three.js (Y-up)
+    // 坐标系转换：Cesium ECEF (Z-up) → Three.js (Y-up)
+    // 保持右手系手性的正确映射（与 solarSystemToCesiumCamera 互逆）：
+    //   Three.x =  Cesium.x
+    //   Three.y =  Cesium.z
+    //   Three.z = -Cesium.y   ← 负号保持手性
     const xMeters = ecef.x;
     const yMeters = ecef.z;
-    const zMeters = ecef.y;
+    const zMeters = -ecef.y;
     
     // 2. 转换单位：meters → AU
     const localPosition = new THREE.Vector3(
