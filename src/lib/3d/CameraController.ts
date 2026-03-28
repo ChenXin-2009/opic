@@ -116,6 +116,11 @@ export class CameraController {
   private trackingTargetGetter: (() => THREE.Vector3) | null = null; // 获取跟踪目标位置的函数
   private trackingDistance: number = 5; // 跟踪时的相机距离
 
+  // 地球锁定相机模式
+  private earthLockEnabled: boolean = false;
+  // controls.update() 之后需要同步的 up 向量
+  private _pendingUpForQuat: THREE.Vector3 | null = null;
+
   constructor(camera: THREE.PerspectiveCamera, domElement: HTMLElement) {
     this.camera = camera;
     this.domElement = domElement;
@@ -134,16 +139,6 @@ export class CameraController {
     
     // ⚠️ 重要：在 OrbitControls 初始化后再设置配置监听器
     this.setupConfigListener();
-    
-    // 🐛 强制调试：显示当前配置
-    console.log('🔧 CameraController 初始化 - 当前配置:', {
-      zoomEasingSpeed: this.currentConfig.zoomEasingSpeed,
-      zoomBaseFactor: this.currentConfig.zoomBaseFactor,
-      dampingFactor: this.currentConfig.dampingFactor,
-      focusLerpSpeed: this.currentConfig.focusLerpSpeed,
-      trackingLerpSpeed: this.currentConfig.trackingLerpSpeed,
-      configSource: 'CameraConfigManager'
-    });
     
     // 配置 OrbitControls - 优化缓动效果
     this.controls.enableDamping = true; // 启用阻尼（惯性效果）
@@ -737,34 +732,15 @@ export class CameraController {
    * 设置配置监听器（在 OrbitControls 初始化后调用）
    */
   private setupConfigListener() {
-    // 监听配置变更
     this.configUnsubscribe = cameraConfigManager.addListener((newConfig) => {
-      console.log('🔧 CameraController 收到配置更新:', newConfig);
       this.currentConfig = newConfig;
       this.applyConfigChanges(newConfig);
     });
   }
 
-  /**
-   * 应用配置变更
-   */
   private applyConfigChanges(config: CameraConfigType) {
-    // 检查 controls 是否已初始化
-    if (!this.controls) {
-      console.log('🔧 OrbitControls 尚未初始化，跳过配置应用');
-      return;
-    }
-    
-    // 更新 OrbitControls 的相关配置
+    if (!this.controls) return;
     this.controls.dampingFactor = config.dampingFactor;
-    
-    console.log('🔧 配置已应用到 CameraController:', {
-      dampingFactor: config.dampingFactor,
-      zoomEasingSpeed: config.zoomEasingSpeed,
-      zoomBaseFactor: config.zoomBaseFactor,
-      focusLerpSpeed: config.focusLerpSpeed,
-      trackingLerpSpeed: config.trackingLerpSpeed
-    });
   }
 
   /**
@@ -859,13 +835,7 @@ export class CameraController {
     }
 
     if (CAMERA_PENETRATION_CONFIG.debugMode) {
-      console.info('CameraController.applyPenetrationConstraint: applied', {
-        distToCenter,
-        minAllowedFromCenter,
-        penetrationDepth,
-        penetrationRatio,
-        isDeepPenetration
-      });
+      // debug logging removed
     }
   }
 
@@ -914,44 +884,82 @@ export class CameraController {
     }
   }
 
+  /**
+   * 设置地球锁定相机模式（启用/禁用标志）
+   */
+  setEarthLockMode(enabled: boolean): void {
+    this.earthLockEnabled = enabled;
+  }
+
+  /**
+   * 获取地球锁定模式状态
+   */
+  getEarthLockEnabled(): boolean {
+    return this.earthLockEnabled;
+  }
+
+  /**
+   * 应用地球自转增量到相机（由动画循环每帧调用）
+   * @param deltaQ 本帧地球自转的增量四元数（newQ * inverse(oldQ)）
+   * @param earthPos 地球世界坐标
+   */
+  applyEarthLockDelta(deltaQ: THREE.Quaternion, earthPos: THREE.Vector3): void {
+    this._applyEarthLockV9(deltaQ, earthPos);
+  }
+
+  /**
+   * 地球锁定算法：把 camera.up 对齐到地球自转轴在视平面上的投影，
+   * 同时在 controls.update() 之后同步 _quat。
+   * 这样 up 始终"朝向地球北极"，视觉上地球不会滚动，拖动也正确。
+   */
+  private _applyEarthLockV9(deltaQ: THREE.Quaternion, earthPos: THREE.Vector3): void {
+    // 旋转相机位置
+    const camRelative = new THREE.Vector3().subVectors(this.camera.position, earthPos);
+    camRelative.applyQuaternion(deltaQ);
+    this.camera.position.copy(earthPos).add(camRelative);
+
+    // 旋转 target
+    const targetRelative = new THREE.Vector3().subVectors(this.controls.target, earthPos);
+    targetRelative.applyQuaternion(deltaQ);
+    this.controls.target.copy(earthPos).add(targetRelative);
+
+    // 地球自转轴方向：用当前 camera.up 经过 deltaQ 旋转后的方向
+    // （camera.up 初始化时已经对齐到地球自转轴，每帧跟着转）
+    const earthAxis = this.camera.up.clone().applyQuaternion(deltaQ).normalize();
+    this.camera.up.copy(earthAxis);
+
+    // 把 earthAxis 投影到垂直于视线的平面，作为修正后的 up
+    const viewDir = new THREE.Vector3()
+      .subVectors(this.controls.target, this.camera.position)
+      .normalize();
+    const dot = earthAxis.dot(viewDir);
+    const upProjected = earthAxis.clone()
+      .sub(viewDir.clone().multiplyScalar(dot))
+      .normalize();
+
+    if (upProjected.length() > 0.1) {
+      this.camera.up.copy(upProjected);
+    }
+
+    // 存储新 up，等 controls.update() 之后再同步 _quat
+    this._pendingUpForQuat = this.camera.up.clone();
+  }
+
   // 手动缩放方法（带平滑效果和增强的防穿透）
   zoom(delta: number) {
-    // 🐛 强制调试：每次缩放都显示配置
-    console.log('🔧 zoom() 调用 - 滚轮敏感度测试:', {
-      delta,
-      '当前配置zoomBaseFactor': this.currentConfig.zoomBaseFactor,
-      '硬编码测试值': 0.5,
-      timestamp: Date.now()
-    });
-    
-    // 如果正在聚焦，先停止聚焦
     if (this.isFocusing) {
       this.isFocusing = false;
       this.targetCameraPosition = null;
       this.targetControlsTarget = null;
-      // 在缩放时不重置最小距离，避免相机跳跃
     }
-    
-    // ⚠️ 关键修复：缩放时不要停止跟踪，而是让跟踪使用缩放后的距离
-    // 这样用户可以在跟踪行星的同时缩放
-    
-    // 获取当前距离（如果正在跟踪，使用 smoothDistance；否则使用实际距离）
+
     const currentDistance = this.isTracking 
       ? this.smoothDistance || this.camera.position.distanceTo(this.controls.target)
       : this.camera.position.distanceTo(this.controls.target);
     
-    // 防止 NaN 和无效值
-    if (!isFinite(currentDistance) || currentDistance <= 0) {
-      console.warn('CameraController.zoom: Invalid currentDistance', currentDistance);
-      return;
-    }
+    if (!isFinite(currentDistance) || currentDistance <= 0) return;
     
-    // 计算缩放因子（更精细的控制）
-    const baseFactor = this.currentConfig.zoomBaseFactor; // 🔧 使用实时配置
-    console.log('🔧 baseFactor 实时配置测试:', {
-      '当前配置值': this.currentConfig.zoomBaseFactor,
-      '实际使用值': baseFactor
-    });
+    const baseFactor = this.currentConfig.zoomBaseFactor;
     const scrollSpeed = Math.min(Math.abs(delta), 2); // 限制最大滚动速度影响
     // delta > 0 表示放大（拉近），delta < 0 表示缩小（拉远）
     // 在3D中，delta > 0 应该减小距离（拉近相机），delta < 0 应该增加距离（拉远相机）
@@ -1025,8 +1033,7 @@ export class CameraController {
     
     
     // 每帧应用防穿透约束，确保相机不会进入行星内部
-    this.applyPenetrationConstraint(deltaTime);
-    // 处理相机左右角度平滑过渡
+    this.applyPenetrationConstraint(deltaTime);    // 处理相机左右角度平滑过渡
     if (this.isAzimuthalAngleTransitioning) {
       // ⚠️ 重要：不要在每帧都从 spherical.theta 同步角度，这会导致振荡
       // 只在开始时读取一次，然后使用我们自己的插值逻辑
@@ -1232,18 +1239,6 @@ export class CameraController {
       if (Math.abs(distanceDiff) > adaptiveThreshold) {
         // ⚠️ 简化缩放算法：统一的缓动速度，不区分大小范围
         const baseSpeed = this.currentConfig.zoomEasingSpeed;
-        
-        // 🐛 调试：输出当前配置值
-        if (Math.random() < 0.01) { // 偶尔输出，避免刷屏
-          console.log('🔧 统一缩放配置调试:', {
-            zoomEasingSpeed: this.currentConfig.zoomEasingSpeed,
-            zoomBaseFactor: this.currentConfig.zoomBaseFactor,
-            distanceDiff: Math.abs(distanceDiff),
-            smoothDistance: this.smoothDistance
-          });
-        }
-        
-        // 使用统一的缓动速度，不区分大小范围
         const adaptiveSpeed = baseSpeed;
         
         this.smoothDistance += distanceDiff * adaptiveSpeed;
@@ -1373,6 +1368,17 @@ export class CameraController {
     
     // 更新 OrbitControls（这会应用旋转和平移的阻尼效果）
     this.controls.update();
+
+    // V8: controls.update() 之后同步 _quat/_quatInverse
+    // 这样当前帧 update() 用旧 _quat（锁定正确），下一帧拖动用新 _quat（方向正确）
+    if (this._pendingUpForQuat) {
+      const controlsAny = this.controls as any;
+      if (controlsAny._quat && controlsAny._quatInverse) {
+        controlsAny._quat.setFromUnitVectors(this._pendingUpForQuat, new THREE.Vector3(0, 1, 0));
+        controlsAny._quatInverse.copy(controlsAny._quat).invert();
+      }
+      this._pendingUpForQuat = null;
+    }
   }
 
   getControls(): OrbitControls {

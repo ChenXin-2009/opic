@@ -131,6 +131,7 @@ export class SceneManager {
   private camera: THREE.PerspectiveCamera;
   private container: HTMLElement;
   private skybox: THREE.Mesh | null = null;
+  private cesiumCompositeMode: boolean = false;
   
   // 多尺度宇宙视图组件
   private nearbyStars: NearbyStars | null = null;
@@ -146,6 +147,9 @@ export class SceneManager {
   private virgoSuperclusterRenderer: any | null = null;
   private laniakeaSuperclusterRenderer: any | null = null;
   private observableBoundarySphere: THREE.LineSegments | null = null;
+  
+  // Cesium 地球集成（可选）
+  private earthPlanet: any | null = null; // 使用 any 避免强制依赖 EarthPlanet
 
   /**
    * Creates a new SceneManager instance.
@@ -183,7 +187,7 @@ export class SceneManager {
       antialias: true,
       powerPreference: 'high-performance',
       logarithmicDepthBuffer: true, // 防止深度闪烁（太阳系尺度很大）
-      alpha: false, // 禁用 alpha 通道，确保背景不透明
+      alpha: true, // 启用 alpha 通道，支持 Cesium 模式下透明背景合成
     });
 
     // 物理光照（某些版本可能不支持，使用可选链）
@@ -192,11 +196,15 @@ export class SceneManager {
     }
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 限制最大像素比
-    this.renderer.setClearColor(0x000000, 1); // 明确设置清除颜色为黑色
+    this.renderer.setClearColor(0x000000, 1); // 默认不透明黑色背景
     
     // ⚠️ 修复：在 Canvas 元素上设置 touchAction，允许自定义触摸处理
     // 这样可以避免影响 fixed 定位的按钮（Firefox 特别敏感）
     this.renderer.domElement.style.touchAction = 'none';
+    
+    // 设置 Three.js canvas z-index（宇宙场景层在后）
+    this.renderer.domElement.style.position = 'absolute';
+    this.renderer.domElement.style.zIndex = '1';
     
     container.appendChild(this.renderer.domElement);
 
@@ -217,6 +225,8 @@ export class SceneManager {
     const fov = 75; // 默认 FOV，实际值由 CameraController 管理
     this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.01, 1e12);
     this.camera.position.set(0, 0, 10);
+    // 启用 Layer 1，让相机在普通模式下也能看到天空盒（天空盒在 Layer 1）
+    this.camera.layers.enable(1);
 
     // 设置渲染器尺寸（在相机初始化之后）
     this.updateSize();
@@ -415,6 +425,8 @@ export class SceneManager {
     skybox.renderOrder = -1000; // 最先渲染（在最后面）
     skybox.userData.isSkybox = true;
     skybox.userData.fixedToCamera = true; // 标记为跟随相机
+    // 天空盒放在 Layer 1，用于 Cesium 模式下的两 pass 渲染
+    skybox.layers.set(1);
   }
   
   /**
@@ -773,34 +785,36 @@ export class SceneManager {
    * 更新银河系背景透明度
    */
   private updateSkyboxOpacity(cameraDistance: number, deltaTime: number): void {
-    const config = SCALE_VIEW_CONFIG;
+    // Cesium 模式下天空盒的 depthTest/transparent 由 setCesiumCompositeMode 管理
+    // 但距离淡出逻辑仍然需要执行（控制 visible 和 opacity）
+    const scaleConfig = SCALE_VIEW_CONFIG;
     
     // 0.7 光年 = 0.7 * LIGHT_YEAR_TO_AU
     const fadeEnd = 0.7 * 63241.077; // 约 44269 AU
     
     // 直接根据距离计算，不使用平滑过渡
     let targetOpacity = 1;
-    if (cameraDistance < config.milkyWayBackgroundFadeStart) {
+    if (cameraDistance < scaleConfig.milkyWayBackgroundFadeStart) {
       targetOpacity = 1;
     } else if (cameraDistance < fadeEnd) {
-      const range = fadeEnd - config.milkyWayBackgroundFadeStart;
-      targetOpacity = 1 - (cameraDistance - config.milkyWayBackgroundFadeStart) / range;
+      const range = fadeEnd - scaleConfig.milkyWayBackgroundFadeStart;
+      targetOpacity = 1 - (cameraDistance - scaleConfig.milkyWayBackgroundFadeStart) / range;
     } else {
       targetOpacity = 0;
     }
     
-    // 直接设置透明度，不使用平滑过渡
     this.skyboxOpacity = targetOpacity;
     
-    // 应用透明度到天空盒
     if (this.skybox) {
       if (this.skyboxOpacity > 0.01) {
         this.skybox.visible = true;
         const material = this.skybox.material as THREE.MeshBasicMaterial;
         material.opacity = this.skyboxOpacity;
-        material.transparent = this.skyboxOpacity < 1;
+        // Cesium 模式下保持 transparent=true（合成需要），普通模式下按透明度决定
+        if (!this.cesiumCompositeMode) {
+          material.transparent = this.skyboxOpacity < 1;
+        }
       } else {
-        // 完全隐藏
         this.skybox.visible = false;
       }
     }
@@ -944,6 +958,37 @@ export class SceneManager {
     this.universeGroup.rotation.z = z * degToRad;
     console.log('[SceneManager] 宇宙组旋转偏移已更新:', { x, y, z });
   }
+  
+  /**
+   * 设置 EarthPlanet 实例（可选的 Cesium 地球集成）
+   * 
+   * @param earthPlanet - EarthPlanet 实例
+   */
+  setEarthPlanet(earthPlanet: any): void {
+    this.earthPlanet = earthPlanet;
+  }
+  
+  /**
+   * 获取 EarthPlanet 实例
+   * 
+   * @returns EarthPlanet 实例或 null
+   */
+  getEarthPlanet(): any | null {
+    return this.earthPlanet;
+  }
+  
+  /**
+   * 更新 EarthPlanet（如果存在）
+   * 
+   * 应在渲染循环中调用，用于更新 Cesium 地球渲染
+   * 
+   * @param deltaTime - 时间增量（秒）
+   */
+  updateEarthPlanet(deltaTime: number): void {
+    if (this.earthPlanet && typeof this.earthPlanet.update === 'function') {
+      this.earthPlanet.update(this.camera, deltaTime);
+    }
+  }
 
   /**
    * 更新渲染器和相机尺寸
@@ -1004,6 +1049,37 @@ export class SceneManager {
    */
   getRenderer(): THREE.WebGLRenderer {
     return this.renderer;
+  }
+
+  /**
+   * 切换 Cesium 合成模式
+   * Cesium 模式下：Three.js canvas 透明背景，Cesium 在下层显示地球
+   * 普通模式下：Three.js canvas 不透明黑色背景
+   */
+  setCesiumCompositeMode(enabled: boolean): void {
+    this.cesiumCompositeMode = enabled;
+    if (enabled) {
+      this.renderer.setClearColor(0x000000, 0); // 透明背景
+      this.scene.background = null;
+      // 天空盒保持可见，由两 pass 渲染处理（见 render()）
+      if (this.skybox) {
+        this.skybox.visible = true;
+        const mat = this.skybox.material as THREE.MeshBasicMaterial;
+        mat.depthTest = false;
+        mat.transparent = false;
+        mat.opacity = 1.0;
+      }
+    } else {
+      this.renderer.setClearColor(0x000000, 1); // 不透明黑色
+      this.scene.background = new THREE.Color(0x000000);
+      if (this.skybox) {
+        this.skybox.visible = true;
+        const mat = this.skybox.material as THREE.MeshBasicMaterial;
+        mat.depthTest = false;
+        mat.transparent = false;
+        mat.opacity = 1.0;
+      }
+    }
   }
 
   /**
@@ -1086,7 +1162,33 @@ export class SceneManager {
    * ```
    */
   render(): void {
-    this.renderer.render(this.scene, this.camera);
+    if (this.cesiumCompositeMode && this.skybox) {
+      // Cesium 模式：两 pass 渲染
+      // Pass 1：只渲染天空盒（Layer 1）→ 银河系背景写入颜色缓冲
+      // clearDepth()：清除深度缓冲（天空盒不写深度，但确保干净）
+      // Pass 2：渲染其他物体（Layer 0，不含天空盒）
+      //   - 地球 mesh：opacity=0 透明色 + depthWrite=true → 地球区域变透明，Cesium 透出
+      //   - 卫星等：正常渲染在地球前面
+
+      this.renderer.autoClear = false;
+      this.renderer.clear(true, true, false); // 清颜色+深度，不清模板
+
+      // Pass 1：渲染天空盒
+      this.camera.layers.set(1);
+      this.renderer.render(this.scene, this.camera);
+
+      // Pass 2：清深度，渲染其他物体（地球写透明色，卫星正常渲染）
+      this.renderer.clearDepth();
+      this.camera.layers.set(0);
+      this.renderer.render(this.scene, this.camera);
+
+      // 恢复
+      this.renderer.autoClear = true;
+      this.camera.layers.enable(0);
+      this.camera.layers.enable(1);
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   /**
@@ -1188,6 +1290,12 @@ export class SceneManager {
     if (this.laniakeaSuperclusterRenderer) {
       this.laniakeaSuperclusterRenderer.dispose();
       this.laniakeaSuperclusterRenderer = null;
+    }
+    
+    // 清理 EarthPlanet（如果存在）
+    if (this.earthPlanet && typeof this.earthPlanet.dispose === 'function') {
+      this.earthPlanet.dispose();
+      this.earthPlanet = null;
     }
     
     // 清理可观测宇宙边界球体

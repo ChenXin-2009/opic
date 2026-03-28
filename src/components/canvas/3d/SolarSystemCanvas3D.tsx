@@ -24,6 +24,7 @@ import { useSatelliteStore } from '@/lib/store/useSatelliteStore';
 import { SceneManager } from '@/lib/3d/SceneManager';
 import { CameraController } from '@/lib/3d/CameraController';
 import { Planet } from '@/lib/3d/Planet';
+import { EarthPlanet } from '@/lib/3d/EarthPlanet';
 import { OrbitCurve } from '@/lib/3d/OrbitCurve';
 import { OrbitLabel } from '@/lib/3d/OrbitLabel';
 import { SatelliteOrbit } from '@/lib/3d/SatelliteOrbit';
@@ -216,9 +217,13 @@ async function initializeUniverseRenderers(sceneManager: SceneManager) {
 
 interface SolarSystemCanvas3DProps {
   onCameraDistanceChange?: (distance: number) => void;
+  cesiumEnabled?: boolean;
+  onEarthPlanetReady?: (earthPlanet: any) => void;
+  onCameraReady?: (camera: any) => void;
+  earthLockEnabled?: boolean;
 }
 
-export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSystemCanvas3DProps = {}) {
+export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnabled = false, onEarthPlanetReady, onCameraReady, earthLockEnabled = false }: SolarSystemCanvas3DProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneManagerRef = useRef<SceneManager | null>(null);
   const cameraControllerRef = useRef<CameraController | null>(null);
@@ -232,6 +237,10 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const satelliteLayerRef = useRef<SatelliteLayer | null>(null);
+  // cesiumEnabled ref — 让动画循环（闭包）能读到最新值
+  const cesiumEnabledRef = useRef<boolean>(cesiumEnabled);
+  // earthLockEnabled ref — 让动画循环能读到最新值
+  const earthLockEnabledRef = useRef<boolean>(earthLockEnabled);
   
   // 卫星跟随状态跟踪
   const isTrackingSatelliteRef = useRef<boolean>(false);
@@ -253,6 +262,41 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
   // 这样可以避免每次状态更新都触发组件重渲染
   // 但初始化时需要获取初始值
   const lang = useSolarSystemStore((state) => state.lang);
+
+  // 监听 cesiumEnabled 变化,动态切换 Cesium 渲染
+  React.useEffect(() => {
+    // 同步 ref，让动画循环闭包能读到最新值
+    cesiumEnabledRef.current = cesiumEnabled;
+    // 切换 Three.js 背景透明度（Cesium 模式下透明，让 Cesium 地球从下层透出来）
+    if (sceneManagerRef.current) {
+      sceneManagerRef.current.setCesiumCompositeMode(cesiumEnabled);
+    }
+
+    const earthPlanet = planetsRef.current.get('earth');
+    if (earthPlanet && 'setCesiumEnabled' in earthPlanet) {
+      console.log(`[SolarSystemCanvas3D] Setting Cesium enabled: ${cesiumEnabled}`);
+      
+      // 把当前 Three.js 相机传给 setCesiumEnabled，启用时会自动做初始同步
+      const camera = cesiumEnabled ? (cameraRef.current as THREE.PerspectiveCamera ?? undefined) : undefined;
+      (earthPlanet as any).setCesiumEnabled(cesiumEnabled, camera);
+      
+      // Cesium 模式下 OrbitControls 保持启用（Three.js 相机驱动 Cesium）
+      // 无论启用还是禁用 Cesium，OrbitControls 始终开启
+      if (cameraControllerRef.current) {
+        const controls = cameraControllerRef.current.getControls();
+        controls.enabled = true;
+        console.log(`[SolarSystemCanvas3D] OrbitControls always enabled`);
+      }
+    }
+  }, [cesiumEnabled]);
+
+  // 监听 earthLockEnabled 变化，切换地球锁定相机模式
+  React.useEffect(() => {
+    earthLockEnabledRef.current = earthLockEnabled;
+    if (cameraControllerRef.current) {
+      cameraControllerRef.current.setEarthLockMode(earthLockEnabled);
+    }
+  }, [earthLockEnabled]);
 
   // 初始化场景 - 使用 useLayoutEffect 确保 DOM 准备好
   useLayoutEffect(() => {
@@ -297,6 +341,12 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
       const scene = sceneManager.getScene();
       const camera = sceneManager.getCamera();
       cameraRef.current = camera; // 保存相机引用用于标尺
+      
+      // 通知父组件 camera 已准备好
+      if (onCameraReady) {
+        onCameraReady(camera);
+      }
+      
       const renderer = sceneManager.getRenderer();
       
       // 创建 CSS2DRenderer 用于显示标记圈
@@ -308,7 +358,7 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         labelRenderer.domElement.style.top = '0';
         labelRenderer.domElement.style.left = '0';
         labelRenderer.domElement.style.pointerEvents = 'none';
-        labelRenderer.domElement.style.zIndex = '1';
+        labelRenderer.domElement.style.zIndex = '3'; // 标签层在最上面
         containerRef.current.appendChild(labelRenderer.domElement);
         labelRendererRef.current = labelRenderer;
       }
@@ -414,11 +464,35 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         // 创建天体（行星或卫星）
         const bodyKey = body.name.toLowerCase();
         const celestialConfig = CELESTIAL_BODIES[bodyKey];
-        const planet = new Planet({
-          body,
-          ...(celestialConfig && { config: celestialConfig }),
-          rotationSpeed: ROTATION_SPEEDS[bodyKey] || 0, // Fallback to old system
-        });
+        
+        // 如果是地球,使用 EarthPlanet 启用 Cesium 集成
+        const planet = bodyKey === 'earth' 
+          ? new EarthPlanet({
+              body,
+              ...(celestialConfig && { config: celestialConfig }),
+              rotationSpeed: ROTATION_SPEEDS[bodyKey] || 0,
+              // 始终创建 Cesium 扩展,但默认禁用
+              enableCesiumTiles: true,
+              // Cesium 配置
+              cesiumConfig: {
+                cesiumContainerId: 'cesium-earth-canvas',
+                // 挂载到 Three.js canvas 的父容器，确保在同一 stacking context 内
+                // 这样 z-index 才能正确工作，UI 元素不会被 Cesium canvas 遮挡
+                parentElement: containerRef.current ?? undefined,
+                canvasResolutionScale: 1.0,
+                maximumScreenSpaceError: 2,
+                maximumNumberOfLoadedTiles: 1000,
+              },
+              // 距离阈值 - 不再使用,Cesium 在所有距离都可用
+              cesiumVisibleDistance: 2000,
+              transitionStartDistance: 1800,
+              transitionEndDistance: 2500,
+            })
+          : new Planet({
+              body,
+              ...(celestialConfig && { config: celestialConfig }),
+              rotationSpeed: ROTATION_SPEEDS[bodyKey] || 0,
+            });
         planet.updatePosition(body.x, body.y, body.z);
         const planetMesh = planet.getMesh();
         scene.add(planetMesh);
@@ -426,8 +500,24 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
         (planetMesh as any).userData = (planetMesh as any).userData || {};
         (planetMesh as any).userData.radius = planet.getRealRadius();
         planetsRef.current.set(body.name.toLowerCase(), planet);
+        
+        // 如果是地球,注册到 SceneManager 并设置初始状态
+        if (bodyKey === 'earth' && sceneManagerRef.current) {
+          sceneManagerRef.current.setEarthPlanet(planet);
+          
+          // 通知父组件 earthPlanet 已准备好
+          if (onEarthPlanetReady) {
+            onEarthPlanetReady(planet);
+          }
+          
+          // 设置初始 Cesium 状态(默认禁用)
+          if ('setCesiumEnabled' in planet) {
+            (planet as any).setCesiumEnabled(cesiumEnabled);
+          }
+        }
 
         // 异步加载并应用贴图（Render Layer only - 不影响物理计算）
+        // 所有行星都需要加载纹理作为 fallback
         const textureManager = TextureManager.getInstance();
         textureManager.getTexture(bodyKey).then((texture) => {
           if (texture && !planet.getIsSun()) {
@@ -576,7 +666,20 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
             
             // 更新星球自转 - 使用当前时间和时间速度
             const currentTimeInDays = dateToJulianDay(currentState.currentTime) - 2451545.0; // Days since J2000.0
-            planet.updateRotation(currentTimeInDays, currentState.timeSpeed);
+            
+            // 地球锁定模式：记录自转前的四元数，自转后计算 delta 并旋转相机
+            if (key === 'earth' && earthLockEnabledRef.current && cameraControllerRef.current) {
+              const quatBefore = planet.getRotationQuaternion();
+              planet.updateRotation(currentTimeInDays, currentState.timeSpeed);
+              const quatAfter = planet.getRotationQuaternion();
+              
+              // delta = quatAfter * inverse(quatBefore)
+              const deltaQ = quatAfter.clone().multiply(quatBefore.clone().invert());
+              const earthPos = planet.getMesh().position.clone();
+              cameraControllerRef.current.applyEarthLockDelta(deltaQ, earthPos);
+            } else {
+              planet.updateRotation(currentTimeInDays, currentState.timeSpeed);
+            }
             
             // 计算相机到星球的距离并更新 LOD
             const planetWorldPos = new THREE.Vector3(body.x, body.y, body.z);
@@ -796,11 +899,14 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           });
         } else {
           // 恢复行星可见性（太阳除外）
+          // 注意：EarthPlanet 在 Cesium 启用时会自己管理 mesh.visible，不要覆盖它
           currentBodies.forEach((body: any) => {
             if (body.isSun) return; // 太阳不处理
             const key = body.name.toLowerCase();
             const planet = planetsRef.current.get(key);
             if (planet) {
+              // 如果是 EarthPlanet 且 Cesium 已启用，跳过（由 EarthPlanet 自己管理可见性）
+              if (key === 'earth' && cesiumEnabledRef.current) return;
               const mesh = planet.getMesh();
               mesh.visible = true;
             }
@@ -849,6 +955,11 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange }: SolarSys
           } catch (err) {
             // 忽略错误，保持渲染循环稳定
           }
+        }
+        
+        // 更新 EarthPlanet（Cesium 集成）
+        if (sceneManagerRef.current) {
+          sceneManagerRef.current.updateEarthPlanet(deltaTime);
         }
 
         // 更新天空盒/星空位置（固定在相机空间）
