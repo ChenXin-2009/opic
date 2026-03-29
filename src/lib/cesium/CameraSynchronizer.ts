@@ -140,18 +140,29 @@ export class CameraSynchronizer {
         cesiumDir: { x: cesiumCamera.direction.x.toFixed(3), y: cesiumCamera.direction.y.toFixed(3), z: cesiumCamera.direction.z.toFixed(3) },
         cesiumUp: { x: cesiumCamera.up.x.toFixed(3), y: cesiumCamera.up.y.toFixed(3), z: cesiumCamera.up.z.toFixed(3) },
         hasIcrfMatrix,
+        earthPos: { x: earthPosition.x.toFixed(6), y: earthPosition.y.toFixed(6), z: earthPosition.z.toFixed(6) },
+        localPosAU: { x: localPosition.x.toFixed(8), y: localPosition.y.toFixed(8), z: localPosition.z.toFixed(8) },
+        distToEarthAU: localPosition.length().toFixed(8),
       });
     }
 
-    // 同步 FOV：将 Three.js 的垂直 FOV 转换为水平 FOV 后设置给 Cesium
-    // Three.js camera.fov 是垂直 FOV（角度）
-    // Cesium PerspectiveFrustum.fov 是水平 FOV（弧度）
-    // 转换公式：hFov = 2 * atan(tan(vFov/2) * aspectRatio)
+    // 同步 FOV 和 near/far
     if (cesiumCamera.frustum instanceof Cesium.PerspectiveFrustum) {
       const vFovRad = THREE.MathUtils.degToRad(threeCamera.fov);
       const aspect = threeCamera.aspect;
       const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
       cesiumCamera.frustum.fov = hFovRad;
+      
+      // 根据相机到地球表面的实际距离动态计算 near/far
+      // Three.js 的 near/far 是 AU 单位，不能直接换算（宇宙尺度 near 换算后会远超地球半径）
+      // Cesium 坐标系单位是米，地球半径约 6,371,000 m
+      const EARTH_RADIUS_M = 6371000;
+      const cameraAltitude = Math.max(0, Cesium.Cartesian3.magnitude(cesiumCamera.position) - EARTH_RADIUS_M);
+      
+      // near = 相机高度的 0.1%，最小 1m，最大 10000m
+      // far = 足够覆盖整个地球及大气层（地球直径约 12742km，取 1e8m 保证宇宙视角也能用）
+      cesiumCamera.frustum.near = Math.max(1, Math.min(10000, cameraAltitude * 0.001));
+      cesiumCamera.frustum.far = Math.max(1e8, cameraAltitude * 100);
     }
   }
   

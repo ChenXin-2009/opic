@@ -37,6 +37,7 @@ import * as THREE from 'three';
 import { Raycaster } from 'three';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import ScaleRuler from './ScaleRuler';
+import GridScaleRuler from './GridScaleRuler';
 import DistanceDisplay from './DistanceDisplay';
 import SettingsMenu from '@/components/SettingsMenu';
 import CelestialSearch from '@/components/search/CelestialSearch';
@@ -52,6 +53,7 @@ import { SatelliteLayer } from '@/lib/3d/SatelliteLayer';
 import { UniverseScale } from '@/lib/types/universeTypes';
 import type { LocalGroupGalaxy, GalaxyGroup, SimpleGalaxy, GalaxyCluster, Supercluster } from '@/lib/types/universeTypes';
 import SatelliteDetailModal from '@/components/satellite/SatelliteDetailModal';
+import ClippingTestPanel from '@/components/debug/ClippingTestPanel';
 
 // ==================== 可调参数配置 ====================
 // ⚙️ 以下参数可在文件顶部调整，影响 3D 场景显示效果
@@ -982,14 +984,23 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
           setDistanceToEarth(distToEarth);
         }
 
-        // 动态调整视距裁剪
+        // 动态调整视距裁剪（A3方案：near = 到地表距离 × 0.001）
         const cameraDistance = Math.sqrt(
           Math.pow(camera.position.x, 2) +
           Math.pow(camera.position.y, 2) +
           Math.pow(camera.position.z, 2)
         );
         const maxDistance = Math.max(cameraDistance * 3, 50);
-        sceneManager.updateCameraClipping(0.01, maxDistance);
+        if (earthBody) {
+          const earthPos = new THREE.Vector3(earthBody.x, earthBody.y, earthBody.z);
+          const EARTH_RADIUS_AU = 0.0000426;
+          const distToSurface = Math.max(camera.position.distanceTo(earthPos) - EARTH_RADIUS_AU, 1e-12);
+          camera.near = distToSurface * 0.001;
+          camera.far = maxDistance;
+          camera.updateProjectionMatrix();
+        } else {
+          sceneManager.updateCameraClipping(0.01, maxDistance);
+        }
         
         // 1. 每帧更新标签位置（不节流，保证流畅移动）
         currentBodies.forEach((body: any) => {
@@ -1791,6 +1802,9 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
         controlsTarget={cameraControllerRef.current?.getControls()?.target || null}
       />
       
+      {/* 太阳系参考网格比例尺 */}
+      <GridScaleRuler sceneManager={sceneManagerRef.current} />
+      
       {/* 天体搜索组件 - 只在 SceneManager 和 CameraController 准备好后渲染 */}
       {sceneManagerRef.current && cameraControllerRef.current && (
         <SearchErrorBoundary>
@@ -1810,6 +1824,13 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
       
       {/* 卫星详情模态框 */}
       <SatelliteDetailModal lang={lang} />
+
+      {/* 裁切问题测试面板 */}
+      <ClippingTestPanel
+        cameraRef={cameraRef}
+        planetsRef={planetsRef}
+        sceneManagerRef={sceneManagerRef}
+      />
     </div>
   );
 }

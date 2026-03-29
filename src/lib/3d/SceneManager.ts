@@ -63,6 +63,7 @@ import { GaiaStars } from './GaiaStars';
 import { SCALE_VIEW_CONFIG, NEARBY_STARS_CONFIG, GALAXY_CONFIG } from '../config/galaxyConfig';
 import { TextureLoadError, RenderError } from '../errors/base';
 import { logError, tryCatch } from '../utils/errors';
+import { SolarSystemGrid, type GridInfo } from './SolarSystemGrid';
 
 // 银河系背景图片路径（圆柱投影/equirectangular）
 const MILKY_WAY_TEXTURE_PATH = '/textures/planets/8k_stars_milky_way.webp';
@@ -132,6 +133,8 @@ export class SceneManager {
   private container: HTMLElement;
   private skybox: THREE.Mesh | null = null;
   private cesiumCompositeMode: boolean = false;
+  /** 锁定 near/far，阻止 updateCameraClipping 覆盖（供调试面板使用） */
+  clippingLocked: boolean = false;
   
   // 多尺度宇宙视图组件
   private nearbyStars: NearbyStars | null = null;
@@ -148,6 +151,9 @@ export class SceneManager {
   private laniakeaSuperclusterRenderer: any | null = null;
   private observableBoundarySphere: THREE.LineSegments | null = null;
   
+  // 太阳系参考网格
+  private solarSystemGrid: SolarSystemGrid | null = null;
+
   // Cesium 地球集成（可选）
   private earthPlanet: any | null = null; // 使用 any 避免强制依赖 EarthPlanet
 
@@ -249,7 +255,13 @@ export class SceneManager {
     this.initializeGaiaStars();
     this.initializeGalaxyRenderer();
     this.createObservableBoundarySphere();
+    this.initializeSolarSystemGrid();
     // Note: Universe scale renderers will be initialized lazily when data is loaded
+  }
+
+  private initializeSolarSystemGrid(): void {
+    this.solarSystemGrid = new SolarSystemGrid();
+    this.scene.add(this.solarSystemGrid.getGroup());
   }
   
   /**
@@ -758,11 +770,23 @@ export class SceneManager {
       this.laniakeaSuperclusterRenderer.update(cameraDistance, deltaTime);
     }
     
+    // 更新太阳系参考网格
+    if (this.solarSystemGrid) {
+      this.solarSystemGrid.update(this.camera, cameraDistance);
+    }
+    
     // 更新可观测宇宙边界球体可见性（只在银河系尺度外显示）
     this.updateObservableBoundaryVisibility(cameraDistance);
     
     // 更新银河系背景透明度（当显示银河系粒子时淡出背景）
     this.updateSkyboxOpacity(cameraDistance, deltaTime);
+  }
+
+  /**
+   * 获取当前网格信息（供比例尺 UI 使用）
+   */
+  getGridInfo(): GridInfo | null {
+    return this.solarSystemGrid ? this.solarSystemGrid.getGridInfo() : null;
   }
   
   /**
@@ -1214,9 +1238,9 @@ export class SceneManager {
    * ```
    */
   updateCameraClipping(currentObjectRadius: number, distanceToSun: number): void {
-    // 兼容 CameraController 的动态 near 调整：
-    // - 不强行覆盖更小的 near（例如 CameraController 为避免剔除而设置的值）
-    // - 建议 near 基于配置的最小值
+    // 调试面板锁定时跳过，避免覆盖测试值
+    if (this.clippingLocked) return;
+
     const suggestedNear = Math.max(VIEW_SETTINGS.minNearPlane, Math.min(0.01, currentObjectRadius * 0.001));
 
     // 仅当当前 camera.near 比建议值大时，才将其缩小到建议值；否则保持当前（以保留动态调整）
@@ -1292,6 +1316,12 @@ export class SceneManager {
       this.laniakeaSuperclusterRenderer = null;
     }
     
+    // 清理太阳系参考网格
+    if (this.solarSystemGrid) {
+      this.solarSystemGrid.dispose();
+      this.solarSystemGrid = null;
+    }
+
     // 清理 EarthPlanet（如果存在）
     if (this.earthPlanet && typeof this.earthPlanet.dispose === 'function') {
       this.earthPlanet.dispose();

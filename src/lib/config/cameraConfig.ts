@@ -62,8 +62,11 @@ export const ZOOM_LIMITS = {
  * 🔧 防穿透设置
  */
 export const PENETRATION_PREVENTION = {
-  /** 安全距离倍数（相对于行星半径） */
-  safetyDistanceMultiplier: 3,
+  /** 安全距离倍数（相对于行星半径）
+   * 1.001 = 刚好在表面外，允许贴近地球表面查看细节
+   * 原值 3 = 约 19km 高度，太保守
+   */
+  safetyDistanceMultiplier: 1.001,
   
   /** 约束平滑度 */
   constraintSmoothness: 0.15,

@@ -12,6 +12,7 @@
  */
 
 import * as THREE from 'three';
+import { CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import {
   NEARBY_STARS_CONFIG,
   NEARBY_STARS_DATA,
@@ -33,6 +34,8 @@ export class NearbyStars {
   private targetOpacity: number = 0;
   private time: number = 0;
   private isVisible: boolean = false;
+  private labels: CSS2DObject[] = [];
+  private labelElements: HTMLDivElement[] = [];
 
   constructor() {
     this.group = new THREE.Group();
@@ -82,6 +85,43 @@ export class NearbyStars {
     } else {
       this.createPointCloud();
     }
+
+    // 创建恒星标签
+    this.createLabels();
+  }
+
+  /**
+   * 创建 CSS2D 恒星名称标签
+   */
+  private createLabels(): void {
+    NEARBY_STARS_DATA.forEach((star, index) => {
+      const div = document.createElement('div');
+      div.style.cssText = [
+        'pointer-events: none',
+        'font-size: 12px',
+        'font-weight: 500',
+        'font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif',
+        'color: #cce8ff',
+        'text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)',
+        'white-space: nowrap',
+        'opacity: 0',
+        'transition: opacity 0.3s',
+        'padding-left: 6px',
+      ].join(';');
+      div.textContent = star.name;
+
+      const label = new CSS2DObject(div);
+      label.position.set(
+        this.starPositions[index * 3],
+        this.starPositions[index * 3 + 1],
+        this.starPositions[index * 3 + 2],
+      );
+      label.visible = false;
+
+      this.labels.push(label);
+      this.labelElements.push(div);
+      this.group.add(label);
+    });
   }
 
   /**
@@ -339,6 +379,20 @@ export class NearbyStars {
       const material = sphere.material as THREE.MeshBasicMaterial;
       material.opacity = this.currentOpacity;
     });
+
+    // 更新标签：只在近邻恒星尺度（相机距离合适时）显示
+    // labelShowDistance 单位是光年，转换为 AU 比较
+    const labelShowDistanceAU = NEARBY_STARS_CONFIG.labelShowDistance * LIGHT_YEAR_TO_AU;
+    const showLabels = cameraDistance >= SCALE_VIEW_CONFIG.nearbyStarsShowStart
+      && cameraDistance <= labelShowDistanceAU;
+    // 标签透明度：在显示范围内随整体透明度变化
+    const labelOpacity = showLabels ? this.currentOpacity : 0;
+    this.labelElements.forEach((el) => {
+      el.style.opacity = String(labelOpacity.toFixed(3));
+    });
+    this.labels.forEach((label) => {
+      label.visible = labelOpacity > 0.01;
+    });
   }
 
   /**
@@ -421,6 +475,13 @@ export class NearbyStars {
       sphere.geometry.dispose();
       (sphere.material as THREE.Material).dispose();
     });
+
+    // 清理标签
+    this.labels.forEach((label) => {
+      if (label.parent) label.parent.remove(label);
+    });
+    this.labels = [];
+    this.labelElements = [];
     
     this.group.clear();
   }

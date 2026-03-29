@@ -85,6 +85,8 @@ export class CesiumAdapter {
   private errorCallback?: (error: Error) => void;
   private performanceMonitor?: any;
   private logCallback?: (level: 'info' | 'warn' | 'error', message: string) => void;
+  private boundHandleResize!: () => void;
+  private boundHandleContextLost!: (e: Event) => void;
   
   constructor(config: CesiumAdapterConfig) {
     this.config = this.validateConfig(config);
@@ -175,7 +177,11 @@ export class CesiumAdapter {
       
       // 性能配置
       requestRenderMode: false, // 每帧渲染
-      maximumRenderTimeChange: Infinity
+      maximumRenderTimeChange: Infinity,
+
+      // 对数深度缓冲：解决近裁剪面裁切问题，允许相机贴近地球表面
+      // 将深度值分布从线性改为对数，near/far 比值可达 1:10^10
+      logarithmicDepthBuffer: true
     });
     
 
@@ -254,10 +260,12 @@ export class CesiumAdapter {
    */
   private setupEventListeners(): void {
     // 监听 WebGL Context Lost（使用 Cesium 的 canvas）
-    this.cesiumCanvas.addEventListener('webglcontextlost', this.handleContextLost.bind(this), false);
+    this.boundHandleContextLost = this.handleContextLost.bind(this);
+    this.cesiumCanvas.addEventListener('webglcontextlost', this.boundHandleContextLost, false);
     
     // 监听窗口大小变化
-    window.addEventListener('resize', this.handleResize.bind(this));
+    this.boundHandleResize = this.handleResize.bind(this);
+    window.addEventListener('resize', this.boundHandleResize);
   }
   
   /**
@@ -313,10 +321,23 @@ export class CesiumAdapter {
     
     try {
       CameraSynchronizer.syncViewMatrix(threeCamera, this.viewer.camera, earthPosition, this.viewer.clock.currentTime);
+      
+      // 临时调试：每隔2秒输出一次相机高度，确认位置同步是否正确
+      const now = Date.now();
+      if (!this._lastDebugTime || now - this._lastDebugTime > 2000) {
+        this._lastDebugTime = now;
+        const camPos = this.viewer.camera.position;
+        const altitude = Cesium.Cartesian3.magnitude(camPos) - 6371000;
+        const frustum = this.viewer.camera.frustum as any;
+        console.log('[CesiumAdapter] camera altitude (m):', altitude.toFixed(0), 
+          'near:', frustum?.near?.toFixed(1), 'far:', frustum?.far?.toFixed(0),
+          'cesiumPos(m):', camPos.x.toFixed(0), camPos.y.toFixed(0), camPos.z.toFixed(0));
+      }
     } catch (error) {
       console.error('[CesiumAdapter] Camera sync error:', error);
     }
   }
+  private _lastDebugTime?: number;
   
   /**
    * 反向同步相机（Cesium → Three.js）
@@ -486,12 +507,24 @@ export class CesiumAdapter {
   private handleResize(): void {
     if (!this.isAvailable) return;
     
-    const width = window.innerWidth * (this.config.canvasResolutionScale ?? 1.0);
-    const height = window.innerHeight * (this.config.canvasResolutionScale ?? 1.0);
+    const parent = this.config.parentElement ?? document.body;
+    const width = (parent.clientWidth || window.innerWidth) * (this.config.canvasResolutionScale ?? 1.0);
+    const height = (parent.clientHeight || window.innerHeight) * (this.config.canvasResolutionScale ?? 1.0);
     
-    // 更新容器尺寸
+    // 更新容器 CSS 尺寸
     this.container.style.width = `${width}px`;
     this.container.style.height = `${height}px`;
+    
+    // 同步更新 canvas 实际像素尺寸，并通知 Cesium 重新计算投影
+    if (this.cesiumCanvas && this.viewer) {
+      this.cesiumCanvas.width = width;
+      this.cesiumCanvas.height = height;
+      try {
+        this.viewer.resize();
+      } catch (e) {
+        console.warn('[CesiumAdapter] resize failed:', e);
+      }
+    }
   }
   
   /**
@@ -535,7 +568,12 @@ export class CesiumAdapter {
     }
     
     // 移除事件监听器
-    window.removeEventListener('resize', this.handleResize.bind(this));
+    if (this.boundHandleResize) {
+      window.removeEventListener('resize', this.boundHandleResize);
+    }
+    if (this.boundHandleContextLost && this.cesiumCanvas) {
+      this.cesiumCanvas.removeEventListener('webglcontextlost', this.boundHandleContextLost);
+    }
     
     console.log('CesiumAdapter disposed');
   }

@@ -961,11 +961,29 @@ export class CameraController {
     
     const baseFactor = this.currentConfig.zoomBaseFactor;
     const scrollSpeed = Math.min(Math.abs(delta), 2); // 限制最大滚动速度影响
+
+    // 距离自适应缩放灵敏度：近距离时大幅降低灵敏度
+    // 曲线设计（以 AU 为单位）：
+    //   REF_DISTANCE = 1 AU（地球轨道），此处灵敏度 = 100%
+    //   LOG_RANGE = 5（跨越5个数量级）
+    //   scale = clamp(log10(distance / 1AU) / 5 + 1, MIN, 1)
+    // 关键节点：
+    //   100 AU  → scale = 1.0  (正常)
+    //   1 AU    → scale = 1.0  (正常)
+    //   0.003 AU (月球轨道) → scale ≈ 0.48
+    //   0.0001 AU (15000km) → scale ≈ 0.20
+    //   0.0000426 AU (地表) → scale ≈ 0.13
+    const REF_DISTANCE_AU = 1.0;
+    const LOG_RANGE = 5;
+    const MIN_SCALE = 0.04; // 最近距离时灵敏度不低于4%
+    const logRatio = Math.log10(Math.max(currentDistance, 1e-12) / REF_DISTANCE_AU);
+    const distanceScale = Math.max(MIN_SCALE, Math.min(1.0, logRatio / LOG_RANGE + 1.0));
+    const effectiveFactor = baseFactor * distanceScale;
+
     // delta > 0 表示放大（拉近），delta < 0 表示缩小（拉远）
-    // 在3D中，delta > 0 应该减小距离（拉近相机），delta < 0 应该增加距离（拉远相机）
     const zoomFactor = delta > 0 
-      ? 1 - (baseFactor * scrollSpeed)  // 减小距离（拉近/放大）
-      : 1 + (baseFactor * scrollSpeed);  // 增大距离（拉远/缩小）
+      ? 1 - (effectiveFactor * scrollSpeed)  // 减小距离（拉近/放大）
+      : 1 + (effectiveFactor * scrollSpeed);  // 增大距离（拉远/缩小）
     
     // 计算新的目标距离
     let newTargetDistance = currentDistance * zoomFactor;
@@ -1367,6 +1385,19 @@ export class CameraController {
     }
     
     // 更新 OrbitControls（这会应用旋转和平移的阻尼效果）
+    // 动态调整 panSpeed + rotateSpeed：近距离时降低灵敏度，对数曲线与缩放一致
+    // 曲线：scale = clamp(log10(dist / 1AU) / 5 + 1, 0.04, 1.0)
+    // 1AU→100%，月球轨道→48%，地表→13%
+    {
+      const REF_DISTANCE_AU = 1.0;
+      const LOG_RANGE = 5;
+      const MIN_SCALE = 0.04;
+      const currentDist = this.camera.position.distanceTo(this.controls.target);
+      const logRatio = Math.log10(Math.max(currentDist, 1e-12) / REF_DISTANCE_AU);
+      const scale = Math.max(MIN_SCALE, Math.min(1.0, logRatio / LOG_RANGE + 1.0));
+      this.controls.panSpeed = CAMERA_CONFIG.panSpeed * scale;
+      this.controls.rotateSpeed = CAMERA_CONFIG.rotateSpeed * scale;
+    }
     this.controls.update();
 
     // V8: controls.update() 之后同步 _quat/_quatInverse
