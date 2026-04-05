@@ -8,9 +8,9 @@
 ==================
 git status
 git add .
-git commit -m "Release 8.0.0: 添加MOD系统，将CESIUM地球，卫星系统转移为MOD，添加基于CESIUM的实时航班显示MOD"
+git commit -m "Release 8.0.1: 修BUG"
 git checkout main
 git pull origin main
-git tag v8.0.0
+git tag v8.0.1
 git push origin main
-git push origin v8.0.0
+git push origin v8.0.1

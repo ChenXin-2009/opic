@@ -82,7 +82,6 @@ export function FlightTrackingPanel({ lang = 'zh' }: FlightTrackingPanelProps) {
       {selectedIcao24 && (
         <FlightPanel
           lang={lang}
-          onClose={() => selectFlight(null)}
         />
       )}
     </>
