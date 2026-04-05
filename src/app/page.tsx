@@ -17,8 +17,6 @@ import { initModManager, autoEnableMods } from "@/lib/mod-manager";
 import { registerCoreMods } from "@/lib/mods";
 import { useModStore } from "@/lib/mod-manager/store";
 import { useModManager } from "@/hooks/useModManager";
-import { FlightTrackingPanel } from "@/components/flight-tracking/FlightTrackingPanel";
-import FlightPanel from "@/components/flight-tracking/FlightPanel";
 
 /**
  * Info button component for top-right corner.
@@ -164,19 +162,12 @@ export default function SolarSystemPage() {
   // 从MOD状态读取功能启用状态
   const cesiumModEnabled = useModStore((state) => state.mods['cesium-integration']?.state === 'enabled');
   const satelliteModEnabled = useModStore((state) => state.mods['satellite-tracking']?.state === 'enabled');
-  const flightModEnabled = useModStore((state) => state.mods['flight-tracking']?.state === 'enabled');
 
   // cesiumEnabled 由 MOD 状态 + 用户手动切换共同决定
   const [userCesiumEnabled, setUserCesiumEnabled] = useState(true);
   const cesiumEnabled = cesiumModEnabled && userCesiumEnabled;
 
-  // Cesium 关闭时级联禁用依赖它的 MOD（如航班追踪）
   const { enableMod, disableMod } = useModManager();
-  useEffect(() => {
-    if (!cesiumEnabled && flightModEnabled) {
-      disableMod('flight-tracking').catch(() => {});
-    }
-  }, [cesiumEnabled, flightModEnabled, disableMod]);
 
   // 初始化MOD管理器
   useEffect(() => {
@@ -266,9 +257,6 @@ export default function SolarSystemPage() {
       {/* Cesium 地图源切换面板（仅 Cesium 模式下显示） */}
       <CesiumMapSourcePanel earthPlanet={earthPlanet} visible={cesiumEnabled} />
 
-      {/* 航班追踪面板（仅 flight-tracking MOD 启用时显示） */}
-      {flightModEnabled && <FlightPanel lang={lang} />}
-      
       {/* 主容器，漂浮模式下不需要留出Header高度空间 */}
       <div 
         className="flex-1 relative min-h-0 flex flex-col"
