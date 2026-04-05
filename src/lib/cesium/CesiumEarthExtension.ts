@@ -100,12 +100,6 @@ export class CesiumEarthExtension {
   
   /**
    * 反向同步相机（Cesium → Three.js）
-   *
-   * 将 Cesium 相机的当前视角写回 Three.js 相机，
-   * 用于"地球锁定"模式下由 Cesium 驱动视角的场景。
-   *
-   * @param threeCamera - 目标 Three.js 透视相机（将被修改）
-   * @param earthPosition - 地球在 Three.js 世界坐标系中的位置（AU）
    */
   syncCameraFromCesium(threeCamera: THREE.PerspectiveCamera, earthPosition: THREE.Vector3): void {
     this.adapter.syncCameraFromCesium(threeCamera, earthPosition);
@@ -138,6 +132,20 @@ export class CesiumEarthExtension {
    */
   setEnableLighting(enabled: boolean): void {
     this.adapter.setEnableLighting(enabled);
+  }
+
+  /**
+   * 切换 Cesium 原生摄像机控制器
+   */
+  setNativeCameraEnabled(enabled: boolean): void {
+    this.adapter.setNativeCameraEnabled(enabled);
+  }
+
+  /**
+   * 获取 Cesium 相机球坐标（heading/pitch/distance），用于驱动 Three.js OrbitControls
+   */
+  getCesiumCameraSpherical(): { distance: number; heading: number; pitch: number } | null {
+    return this.adapter.getCesiumCameraSpherical();
   }
 
   /**

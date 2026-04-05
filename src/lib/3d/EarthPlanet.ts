@@ -34,9 +34,9 @@ const AU_TO_KM = 149597870.7;
 export class EarthPlanet extends Planet {
   private cesiumExtension: CesiumEarthExtension | null = null;
   private config: EarthPlanetConfig;
-  private originalMaterial: THREE.Material | null = null; // 保存原始材质
-  private cesiumEnabled: boolean = false; // 跟踪 Cesium 状态
-  private cesiumCanvasVisible: boolean = false; // 跟踪 canvas 可见状态，避免重复调用
+  private originalMaterial: THREE.Material | null = null;
+  private cesiumEnabled: boolean = false;
+  private cesiumCanvasVisible: boolean = false;
   
   constructor(config: EarthPlanetConfig) {
     super(config);
@@ -122,10 +122,8 @@ export class EarthPlanet extends Planet {
           this.cesiumCanvasVisible = true;
         }
 
-        // 1. 将 Three.js 相机同步到 Cesium（OrbitControls 驱动，Cesium 跟随）
+        // Three.js OrbitControls 驱动，同步后渲染
         this.cesiumExtension.syncCamera(camera, earthPos);
-        
-        // 2. 渲染 Cesium 场景
         this.cesiumExtension.render();
       }
     }

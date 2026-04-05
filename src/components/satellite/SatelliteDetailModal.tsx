@@ -38,12 +38,19 @@ function SatelliteDetailModal({ lang = 'zh' }: SatelliteDetailModalProps) {
   // 当前卫星的轨道是否显示
   const isOrbitVisible = selectedSatellite ? showOrbits.has(selectedSatellite) : false;
 
-  // 当模态框打开时，自动显示轨道
+  // 当模态框打开时，自动显示轨道（仅首次，不重复触发）
+  const hasAutoToggledRef = useRef<number | null>(null);
   useEffect(() => {
-    if (selectedSatellite && !isOrbitVisible) {
-      toggleOrbit(selectedSatellite);
+    if (selectedSatellite && hasAutoToggledRef.current !== selectedSatellite) {
+      hasAutoToggledRef.current = selectedSatellite;
+      if (!showOrbits.has(selectedSatellite)) {
+        toggleOrbit(selectedSatellite);
+      }
     }
-  }, [selectedSatellite, isOrbitVisible, toggleOrbit]);
+    if (!selectedSatellite) {
+      hasAutoToggledRef.current = null;
+    }
+  }, [selectedSatellite, showOrbits, toggleOrbit]);
 
   // ESC键关闭
   useEffect(() => {

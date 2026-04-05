@@ -13,7 +13,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/somap.git
+git clone https://github.com/ChenXin-2009/somap.git
 cd somap
 
 # 安装依赖
@@ -27,7 +27,7 @@ npm run dev
 
 ## 项目架构
 
-CXIC 采用双引擎架构：
+CXIC 采用双引擎架构，并正在向模块化插件架构（MOD Manager）演进：
 
 ```
 src/
@@ -37,17 +37,29 @@ src/
 │   ├── cesium/            # Cesium 地图组件
 │   ├── satellite/         # 卫星追踪 UI
 │   ├── search/            # 搜索功能
-│   └── debug/             # 调试面板
+│   ├── mod-manager/       # MOD 管理器 UI（开发中）
+│   └── debug/             # 调试面板（仅开发环境）
 ├── lib/                    # 核心逻辑
 │   ├── 3d/                # Three.js 渲染器
 │   │   ├── SceneManager.ts
 │   │   ├── Planet.ts
-│   │   └── GalaxyRenderer.ts
+│   │   ├── GalaxyRenderer.ts
+│   │   ├── LocalGroupRenderer.ts
+│   │   ├── VirgoSuperclusterRenderer.ts
+│   │   ├── LaniakeaSuperclusterRenderer.ts
+│   │   ├── LODManager.ts
+│   │   └── ...
 │   ├── cesium/            # Cesium 集成
 │   │   ├── CesiumAdapter.ts
 │   │   └── CameraSynchronizer.ts
 │   ├── astronomy/         # 天文计算（星历、轨道）
 │   ├── satellite/         # 卫星追踪（SGP4）
+│   ├── mod-manager/       # MOD 管理器核心（开发中）
+│   │   ├── core/          # 注册表、生命周期、依赖解析
+│   │   ├── api/           # Time/Camera/Celestial/Satellite/Render API
+│   │   ├── persistence/   # 配置持久化
+│   │   ├── error/         # 错误处理与隔离
+│   │   └── performance/   # 性能监控
 │   ├── data/              # 数据加载器
 │   └── config/            # 配置文件
 └── stores/                # Zustand 状态管理
@@ -64,6 +76,7 @@ src/
 | 语言 | TypeScript 5 |
 | 样式 | Tailwind CSS 4 |
 | 状态 | Zustand 5 |
+| 测试 | Jest + fast-check（属性测试） |
 
 ### 代码规范
 
@@ -131,6 +144,19 @@ npm run test:coverage
 | 天文计算 | 轨道力学、星历计算 |
 | 卫星追踪 | SGP4、TLE 数据 |
 | 性能优化 | LOD、实例化、内存管理 |
+| MOD 系统 | 插件架构、依赖管理、API 设计 |
+
+### MOD 管理器系统（开发中）
+
+项目正在实现模块化插件架构，欢迎参与：
+
+- MOD 生命周期管理
+- 依赖解析与循环检测
+- API 层设计（Time / Camera / Celestial / Satellite / Render）
+- 配置持久化
+- MOD 管理 UI
+
+详见 `.kiro/specs/mod-manager/` 中的需求和设计文档。
 
 ## 数据文件
 
@@ -147,7 +173,7 @@ npm run test:coverage
 
 ### 开启调试面板
 
-开发环境下，使用调试组件查看渲染状态：
+开发环境下，调试组件仅在 `NODE_ENV=development` 时渲染：
 
 ```tsx
 import { CesiumDebugPanel } from '@/components/debug/CesiumDebugPanel';
@@ -161,7 +187,7 @@ import { CesiumDebugPanel } from '@/components/debug/CesiumDebugPanel';
 
 **星历数据精度**
 
-高精度范围：2009-2109（地球/火星/月球），2009-2039（其他天体）。
+高精度范围：2009-2109（地球/火星/月球），2009-2039（其他天体）。超出范围自动切换解析模型。
 
 ## 有问题？
 

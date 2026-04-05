@@ -362,11 +362,13 @@ export class SatelliteRenderer {
     // 池中没有可用对象，创建新对象
     const geometry = new THREE.BufferGeometry();
     const material = new THREE.LineBasicMaterial({
-      opacity: 0.6,
+      opacity: 0.8,
       transparent: true,
       depthWrite: false,
+      depthTest: false,  // 不被地球遮挡
     });
     const line = new THREE.Line(geometry, material);
+    line.renderOrder = 9999;
     
     const orbitLine: OrbitLine = {
       line,
@@ -504,7 +506,7 @@ export class SatelliteRenderer {
     const satellite = this.satellites.get(noradId);
     if (!satellite) {
       console.warn(`[SatelliteRenderer] 未找到卫星 ${noradId}`);
-      return;
+      throw new Error(`satellite ${noradId} not ready`);
     }
     
     try {
@@ -561,12 +563,44 @@ export class SatelliteRenderer {
   hideOrbit(noradId: number): void {
     const orbitLine = this.orbitCurves.get(noradId);
     if (orbitLine) {
-      // 归还到对象池
-      this.returnOrbitLineToPool(orbitLine);
-      
-      // 从映射中删除
+      this.scene.remove(orbitLine.line);
+      orbitLine.geometry.dispose();
+      orbitLine.material.dispose();
       this.orbitCurves.delete(noradId);
     }
+  }
+
+  /** 检查轨道是否已显示 */
+  hasOrbit(noradId: number): boolean {
+    return this.orbitCurves.has(noradId);
+  }
+
+  showOrbitFromPoints(noradId: number, points: THREE.Vector3[], orbitType: OrbitType): void {
+    if (this.orbitCurves.has(noradId)) return;
+
+    const maxOrbits = satelliteConfig.ui.maxOrbits;
+    if (this.orbitCurves.size >= maxOrbits) {
+      const firstKey = this.orbitCurves.keys().next().value;
+      if (firstKey !== undefined) this.hideOrbit(firstKey);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setFromPoints(points);
+
+    const material = new THREE.LineBasicMaterial({
+      color: this.getColorByOrbitType(orbitType),
+      opacity: 0.8,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+    });
+
+    const line = new THREE.Line(geometry, material);
+    line.renderOrder = 9999;
+    line.name = `SatelliteOrbit_${noradId}`;
+    this.scene.add(line);
+
+    this.orbitCurves.set(noradId, { line, geometry, material, inUse: true });
   }
   
   /**
@@ -580,9 +614,8 @@ export class SatelliteRenderer {
    * ```
    */
   clearAllOrbits(): void {
-    this.orbitCurves.forEach((_, noradId) => {
-      this.hideOrbit(noradId);
-    });
+    const ids = Array.from(this.orbitCurves.keys());
+    ids.forEach(noradId => this.hideOrbit(noradId));
   }
   
   /**

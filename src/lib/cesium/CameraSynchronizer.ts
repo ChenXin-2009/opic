@@ -260,68 +260,68 @@ export class CameraSynchronizer {
   static syncFromCesium(
     cesiumCamera: Cesium.Camera,
     threeCamera: THREE.PerspectiveCamera,
-    earthPosition: THREE.Vector3
+    earthPosition: THREE.Vector3,
+    currentTime?: Cesium.JulianDate
   ): void {
-    // ── 1. 转换 Cesium 相机位置（ECEF 米 → Solar System Frame AU）────────────
-    const cameraSolarSystem = CoordinateTransformer.ecefToSolarSystem(
-      cesiumCamera.position,
-      earthPosition
-    );
-    
-    // ── 2. 设置 Three.js 相机位置 ────────────────────────────────────────────
+    // ── 1. 获取 ECEF → ICRF 旋转矩阵（syncViewMatrix 中 ICRF→ECEF 的逆）────
+    const icrfToFixed = new Cesium.Matrix3();
+    const time = currentTime ?? Cesium.JulianDate.now();
+    const hasIcrfMatrix = !!Cesium.Transforms.computeIcrfToFixedMatrix(time, icrfToFixed);
+    // 逆矩阵：ECEF → ICRF（正交矩阵的逆 = 转置）
+    const fixedToIcrf = hasIcrfMatrix
+      ? Cesium.Matrix3.transpose(icrfToFixed, new Cesium.Matrix3())
+      : null;
+
+    // 黄赤交角（与 syncViewMatrix 相同的常量）
+    const cosObl = Math.cos(23.4393 * Math.PI / 180);
+    const sinObl = Math.sin(23.4393 * Math.PI / 180);
+
+    /**
+     * 将 ECEF 向量逆变换回 Solar System Frame（黄道惯性系）
+     * 逆变换链：ECEF → ICRF（逆 GMST）→ 黄道系（逆黄赤交角，绕 X 轴旋转 +ε）
+     */
+    const ecefToSolarSystem = (v: Cesium.Cartesian3): THREE.Vector3 => {
+      let ix = v.x, iy = v.y, iz = v.z;
+
+      // 步骤一：ECEF → 赤道惯性系 ICRF（逆 GMST 旋转，即转置 ICRF→ECEF 矩阵）
+      if (fixedToIcrf) {
+        const inertial = Cesium.Matrix3.multiplyByVector(
+          fixedToIcrf,
+          new Cesium.Cartesian3(ix, iy, iz),
+          new Cesium.Cartesian3()
+        );
+        ix = inertial.x; iy = inertial.y; iz = inertial.z;
+      }
+
+      // 步骤二：赤道惯性系 → 黄道系（逆黄赤交角旋转，绕 X 轴旋转 +ε）
+      // Rx(+ε): y' = y*cos(ε) - z*sin(ε),  z' = y*sin(ε) + z*cos(ε)
+      // 注意：syncViewMatrix 里正变换是 Rx(-ε)，逆变换是 Rx(+ε)
+      // Rx(-ε): y' = y*cos(ε) + z*sin(ε),  z' = -y*sin(ε) + z*cos(ε)
+      // 所以 Rx(+ε) 即逆变换：y' = y*cos(ε) - z*sin(ε),  z' = y*sin(ε) + z*cos(ε)
+      const sy = iy * cosObl - iz * sinObl;
+      const sz = iy * sinObl + iz * cosObl;
+
+      return new THREE.Vector3(ix, sy, sz);
+    };
+
+    // ── 2. 转换相机位置（ECEF 米 → Solar System Frame AU）────────────────────
+    const posECEF = cesiumCamera.position;
+    const localAU = ecefToSolarSystem(posECEF);
+    // 单位换算：米 → AU，再加上地球在太阳系中的位置
+    const cameraSolarSystem = new THREE.Vector3(
+      localAU.x / 149597870700,
+      localAU.y / 149597870700,
+      localAU.z / 149597870700
+    ).add(earthPosition);
     threeCamera.position.copy(cameraSolarSystem);
-    
-    // ── 3. 坐标轴重映射：Cesium ECEF → Three.js，保持右手系手性 ──────────────
-    //
-    // 坐标系定义：
-    //   Cesium ECEF：X 轴指向本初子午线与赤道交点，Y 轴指向东经 90° 与赤道交点，
-    //                Z 轴指向北极（Z-up 右手系）
-    //   Three.js：   X 轴向右，Y 轴向上，Z 轴朝向观察者（Y-up 右手系）
-    //
-    // 手性保持原理：
-    //   两个坐标系均为右手系，但"上"轴不同（Cesium Z-up vs Three.js Y-up）。
-    //   正确的轴映射需满足：映射后的三个轴仍构成右手系（det(M) = +1）。
-    //   若直接令 Three.y = Cesium.y（不加负号），则 det(M) = -1，产生镜像翻转。
-    //
-    //   正确映射（det = +1，保持右手系）：
-    //     Three.x =  Cesium.x   （右方向不变）
-    //     Three.y =  Cesium.z   （Cesium 的"上"→ Three.js 的"上"）
-    //     Three.z = -Cesium.y   （负号消除镜像，保持手性）
-    //
-    //   验证：Three.x × Three.y = (Cesium.x) × (Cesium.z) = -Cesium.y = Three.z ✓
-    const directionThree = new THREE.Vector3(
-      cesiumCamera.direction.x,
-      cesiumCamera.direction.z,
-      -cesiumCamera.direction.y
-    ).normalize();
-    
-    const upThree = new THREE.Vector3(
-      cesiumCamera.up.x,
-      cesiumCamera.up.z,
-      -cesiumCamera.up.y
-    ).normalize();
-    
-    // ── 4. 计算 Three.js 相机的目标点（相机位置 + 单位方向向量）────────────
-    const target = new THREE.Vector3().addVectors(
-      threeCamera.position,
-      directionThree
-    );
-    
-    // ── 5. 使用 lookAt 设置相机方向（同时更新视图矩阵）─────────────────────
-    // 必须先设置 up 向量，再调用 lookAt，否则 lookAt 会使用旧的 up 向量
-    threeCamera.up.copy(upThree);
+
+    // ── 3. 转换方向和上向量（ECEF → Solar System Frame，纯方向向量无需加地球位置）
+    const dirSolar = ecefToSolarSystem(cesiumCamera.direction).normalize();
+    const upSolar  = ecefToSolarSystem(cesiumCamera.up).normalize();
+
+    // ── 4. 使用 lookAt 设置相机方向 ──────────────────────────────────────────
+    const target = new THREE.Vector3().addVectors(threeCamera.position, dirSolar);
+    threeCamera.up.copy(upSolar);
     threeCamera.lookAt(target);
-    
-    // 调试日志（偶尔输出，约 1% 概率，避免性能影响）
-    if (Math.random() < 0.01) {
-      console.log('[CameraSynchronizer] Cesium → Three.js sync:', {
-        cesiumPos: { x: cesiumCamera.position.x.toFixed(0), y: cesiumCamera.position.y.toFixed(0), z: cesiumCamera.position.z.toFixed(0) },
-        cesiumDir: { x: cesiumCamera.direction.x.toFixed(3), y: cesiumCamera.direction.y.toFixed(3), z: cesiumCamera.direction.z.toFixed(3) },
-        cesiumUp: { x: cesiumCamera.up.x.toFixed(3), y: cesiumCamera.up.y.toFixed(3), z: cesiumCamera.up.z.toFixed(3) },
-        threePos: { x: threeCamera.position.x.toFixed(6), y: threeCamera.position.y.toFixed(6), z: threeCamera.position.z.toFixed(6) },
-        threeDir: { x: directionThree.x.toFixed(3), y: directionThree.y.toFixed(3), z: directionThree.z.toFixed(3) },
-        threeUp: { x: upThree.x.toFixed(3), y: upThree.y.toFixed(3), z: upThree.z.toFixed(3) }
-      });
-    }
   }
 }

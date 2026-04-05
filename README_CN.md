@@ -12,7 +12,9 @@
 
 ## 项目简介
 
-CXIC 是一个基于 Web 的交互式太阳系和宇宙可视化应用，使用 Three.js、Cesium 和 Next.js 构建。通过真实的天文数据和精确的轨道计算，为您呈现从地球表面到可观测宇宙边缘的动态模拟。
+CXIC 是一个使用 Three.js、Cesium 和 Next.js 构建的交互式宇宙可视化应用。通过真实的天文数据和精确的轨道计算，为您呈现从地球表面到可观测宇宙边缘的动态模拟。
+
+项目正在向模块化插件架构（MOD Manager）演进，允许功能在运行时独立加载、配置和切换，无需重启应用。
 
 ## 主要功能
 
@@ -27,8 +29,8 @@ CXIC 是一个基于 Web 的交互式太阳系和宇宙可视化应用，使用 
 ### 太阳系模拟
 
 - 高精度星历系统：基于 NASA JPL DE440 星历数据
-- 27个天体：8大行星 + 19颗主要卫星的精确位置计算
-- 时间控制：2009-2109年高精度时间范围，支持快进和倒退
+- 27 个天体：8 大行星 + 19 颗主要卫星的精确位置计算
+- 时间控制：2009-2109 年高精度时间范围，支持快进和倒退
 - 动态数据源：高精度星历 ↔ 解析模型自动切换
 
 ### 人造卫星追踪
@@ -54,13 +56,24 @@ CXIC 是一个基于 Web 的交互式太阳系和宇宙可视化应用，使用 
 | 拉尼亚凯亚超星系团 | 50M - 500M 光年 | Cosmicflows-3 |
 | 可观测宇宙 | 500M+ 光年 | 宇宙网络结构 |
 
+### MOD 管理器系统（开发中）
+
+模块化插件架构，保持核心系统轻量的同时允许可选功能在运行时动态加载：
+
+- 声明式 MOD 清单，支持语义化版本
+- 完整生命周期管理：registered → loaded → enabled → disabled → unloaded
+- 自动依赖解析，含循环依赖检测
+- 版本化 API 层：Time、Camera、Celestial、Satellite、Render API
+- 错误隔离——MOD 故障不影响核心系统
+- 配置跨会话持久化
+
 ### 视觉特性
 
 - 高质量行星纹理（Solar System Scope）
 - 基于 ESA Gaia 数据的恒星渲染
 - 交互式相机：自由旋转、缩放和天体聚焦
 - 尺度间的无缝视觉切换
-- 4级细节层次，根据距离动态调整
+- 4 级细节层次，根据距离动态调整
 
 ## 技术栈
 
@@ -73,6 +86,7 @@ CXIC 是一个基于 Web 的交互式太阳系和宇宙可视化应用，使用 
 | 状态管理 | Zustand 5 |
 | 轨道计算 | satellite.js (SGP4) |
 | 数据压缩 | pako (gzip) |
+| 测试 | Jest + fast-check |
 
 ## 快速开始
 
@@ -140,6 +154,60 @@ npm start
 - TLE 轨道数据：CelesTrak (NORAD)
 - 卫星元数据：UCS (Union of Concerned Scientists) 卫星数据库
 
+### 视觉资源
+
+- 行星纹理：Solar System Scope
+- 银河系图像：ESA/Gaia
+
+## 项目结构
+
+```
+cxic/
+├── src/
+│   ├── app/                    # Next.js 应用路由
+│   ├── components/             # React 组件
+│   │   ├── canvas/            # 3D 画布组件
+│   │   ├── cesium/            # Cesium 相关组件
+│   │   ├── satellite/         # 卫星追踪 UI
+│   │   ├── mod-manager/       # MOD 管理器 UI（开发中）
+│   │   └── ...
+│   ├── lib/
+│   │   ├── 3d/                # Three.js 渲染器
+│   │   │   ├── SceneManager.ts
+│   │   │   ├── Planet.ts
+│   │   │   ├── GalaxyRenderer.ts
+│   │   │   ├── LocalGroupRenderer.ts
+│   │   │   ├── VirgoSuperclusterRenderer.ts
+│   │   │   ├── LaniakeaSuperclusterRenderer.ts
+│   │   │   ├── LODManager.ts
+│   │   │   └── ...
+│   │   ├── cesium/            # Cesium 集成
+│   │   │   ├── CesiumAdapter.ts
+│   │   │   ├── CameraSynchronizer.ts
+│   │   │   └── ...
+│   │   ├── astronomy/         # 天文计算
+│   │   ├── satellite/         # 卫星追踪（SGP4）
+│   │   ├── mod-manager/       # MOD 管理器核心（开发中）
+│   │   │   ├── core/          # 注册表、生命周期、依赖解析
+│   │   │   ├── api/           # Time/Camera/Celestial/Satellite/Render API
+│   │   │   ├── persistence/   # 配置持久化
+│   │   │   ├── error/         # 错误处理与隔离
+│   │   │   └── performance/   # 性能监控
+│   │   ├── config/            # 配置文件
+│   │   ├── data/              # 数据加载器
+│   │   └── types/             # TypeScript 类型
+│   └── stores/                # Zustand 状态管理
+├── public/
+│   ├── data/                  # 天文数据
+│   │   ├── ephemeris/        # NASA JPL 星历数据
+│   │   ├── gaia/             # Gaia 恒星数据
+│   │   └── universe/         # 宇宙结构数据
+│   ├── textures/              # 纹理资源
+│   └── cesium/                # Cesium 静态资源
+├── scripts/                   # 数据生成脚本
+└── docs/                      # 项目文档
+```
+
 ## 开发
 
 ```bash
@@ -159,10 +227,10 @@ npm run test:coverage
 
 ## 性能优化
 
-- 4级细节层次，根据距离动态调整
+- 4 级细节层次，根据距离动态调整
 - 按需加载地球瓦片，自动淘汰远距离瓦片
 - 近距 Cesium 瓦片，远距 Three.js 球体
-- 自定义着色器，支持百万级粒子
+- 自定义着色器粒子系统，支持百万级粒子
 - 实例化渲染减少绘制调用
 - 视锥剔除，只渲染可见对象
 - 自动释放远距离资源
@@ -174,13 +242,19 @@ npm run test:coverage
 
 **天文数据精度说明：**
 
-在高精度时间范围内（2009-2109年地球/火星/月球，2009-2039年其他天体），使用 NASA JPL 星历数据，精度可达角秒级。超出此范围时，系统自动切换到解析模型，精度降低。
+在高精度时间范围内（2009-2109 年地球/火星/月球，2009-2039 年其他天体），使用 NASA JPL 星历数据，精度可达角秒级。超出此范围时，系统自动切换到解析模型，精度降低。
 
 如需精确的天文数据用于科学研究或导航，请参考 NASA JPL HORIZONS 系统或其他专业天文机构的官方资料。
 
 **卫星轨道数据说明：**
 
 人造卫星轨道数据基于 TLE（Two-Line Element）和 SGP4 模型计算，精度受大气阻力、太阳辐射压等因素影响，仅供参考。
+
+**责任声明：**
+
+本软件按"原样"提供，不附带任何明示或暗示的保证。在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任承担责任。
+
+本软件不适用于需要故障安全性能的环境。用户明确理解并同意，作者不对因在高风险活动中使用本软件而造成的任何损失或损害承担责任。
 
 ## 贡献指南
 
@@ -193,6 +267,14 @@ npm run test:coverage
 ## 许可证
 
 本项目采用 Apache License 2.0 许可证。
+
+主要特点：
+- 允许商业使用、修改和分发
+- 需保留版权和许可证声明
+- 提供明确的专利授权
+- 包含免责声明和责任限制
+
+详见 [LICENSE](LICENSE) 文件。
 
 ## 联系方式
 

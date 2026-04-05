@@ -12,7 +12,9 @@
 
 ## Overview
 
-CXIC is an interactive solar system and universe visualization application built with Three.js, Cesium, and Next.js. Using real astronomical data and precise orbital calculations, it presents a dynamic simulation from Earth's surface to the edge of the observable universe.
+CXIC is an interactive universe visualization application built with Three.js, Cesium, and Next.js. Using real astronomical data and precise orbital calculations, it presents a dynamic simulation from Earth's surface to the edge of the observable universe.
+
+The project is transitioning to a modular plugin architecture (MOD Manager system), allowing features to be independently loaded, configured, and toggled at runtime without restarting the application.
 
 ## Features
 
@@ -54,6 +56,17 @@ Explore 9 cosmic scales through zoom:
 | Laniakea Supercluster | 50M - 500M ly | Cosmicflows-3 |
 | Observable Universe | 500M+ ly | Cosmic Web Structure |
 
+### MOD Manager System (In Development)
+
+A modular plugin architecture that keeps the core system lightweight while allowing optional features to be dynamically loaded at runtime:
+
+- Declarative MOD manifests with semantic versioning
+- Full lifecycle management: registered → loaded → enabled → disabled → unloaded
+- Automatic dependency resolution with cycle detection
+- Versioned API layer: Time, Camera, Celestial, Satellite, Render APIs
+- Error isolation — MOD failures don't affect the core system
+- Configuration persistence across sessions
+
 ### Visual Features
 
 - High-quality planetary textures (Solar System Scope)
@@ -73,6 +86,7 @@ Explore 9 cosmic scales through zoom:
 | State Management | Zustand 5 |
 | Orbital Calculation | satellite.js (SGP4) |
 | Data Compression | pako (gzip) |
+| Testing | Jest + fast-check |
 
 ## Quick Start
 
@@ -148,26 +162,37 @@ npm start
 ## Project Structure
 
 ```
-somap/
+cxic/
 ├── src/
 │   ├── app/                    # Next.js app router
 │   ├── components/             # React components
 │   │   ├── canvas/            # 3D canvas components
 │   │   ├── cesium/            # Cesium-related components
-│   │   ├── satellite/         # Satellite-related components
+│   │   ├── satellite/         # Satellite tracking UI
+│   │   ├── mod-manager/       # MOD manager UI (in development)
 │   │   └── ...
 │   ├── lib/
 │   │   ├── 3d/                # Three.js renderers
 │   │   │   ├── SceneManager.ts
 │   │   │   ├── Planet.ts
 │   │   │   ├── GalaxyRenderer.ts
-│   │   │   └── ...            # Universe scale renderers
+│   │   │   ├── LocalGroupRenderer.ts
+│   │   │   ├── VirgoSuperclusterRenderer.ts
+│   │   │   ├── LaniakeaSuperclusterRenderer.ts
+│   │   │   ├── LODManager.ts
+│   │   │   └── ...
 │   │   ├── cesium/            # Cesium integration
 │   │   │   ├── CesiumAdapter.ts
 │   │   │   ├── CameraSynchronizer.ts
 │   │   │   └── ...
 │   │   ├── astronomy/         # Astronomical calculations
-│   │   ├── satellite/         # Satellite tracking
+│   │   ├── satellite/         # Satellite tracking (SGP4)
+│   │   ├── mod-manager/       # MOD manager core (in development)
+│   │   │   ├── core/          # Registry, lifecycle, dependency resolver
+│   │   │   ├── api/           # Time, Camera, Celestial, Satellite, Render APIs
+│   │   │   ├── persistence/   # Configuration storage
+│   │   │   ├── error/         # Error handling and isolation
+│   │   │   └── performance/   # Performance monitoring
 │   │   ├── config/            # Configuration files
 │   │   ├── data/              # Data loaders
 │   │   └── types/             # TypeScript types

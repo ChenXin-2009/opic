@@ -174,7 +174,7 @@ function calculateOrbitTrajectory(tle, startJulianDate, steps, stepInterval) {
  */
 self.onmessage = function(e) {
   try {
-    const { type, payload } = e.data;
+    const { type, payload, requestId } = e.data;
     
     if (type === 'calculate') {
       // 批量位置计算
@@ -193,6 +193,7 @@ self.onmessage = function(e) {
       // 发送结果
       self.postMessage({
         type: 'result',
+        requestId,
         payload: {
           positions: results,
           errors: errors.length > 0 ? errors : undefined
@@ -232,6 +233,7 @@ self.onmessage = function(e) {
       // 发送结果
       self.postMessage({
         type: 'result',
+        requestId,
         payload: {
           positions: points,
           errors: errors.length > 0 ? errors : undefined
@@ -246,6 +248,7 @@ self.onmessage = function(e) {
     // 发送错误消息
     self.postMessage({
       type: 'error',
+      requestId,
       payload: {
         positions: [],
         errors: [error.message]

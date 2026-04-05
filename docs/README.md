@@ -8,7 +8,6 @@
 |------|------|
 | [CODE_QUALITY.md](./CODE_QUALITY.md) | 代码质量标准和最佳实践 |
 | [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) | 项目实现总结 |
-| [PROJECT_CLEANUP_COMPLETE.md](./PROJECT_CLEANUP_COMPLETE.md) | 项目清理报告 |
 
 ## 架构与设计
 
@@ -67,12 +66,19 @@ cxic/
 │   │   ├── canvas/         # 3D 画布组件
 │   │   ├── cesium/         # Cesium 相关组件
 │   │   ├── satellite/      # 卫星追踪组件
+│   │   ├── mod-manager/    # MOD 管理器 UI（开发中）
 │   │   └── ...
 │   ├── lib/
 │   │   ├── 3d/             # Three.js 渲染器
 │   │   ├── cesium/         # Cesium 集成
 │   │   ├── astronomy/      # 天文计算
 │   │   ├── satellite/      # 卫星追踪
+│   │   ├── mod-manager/    # MOD 管理器核心（开发中）
+│   │   │   ├── core/       # 注册表、生命周期、依赖解析
+│   │   │   ├── api/        # Time/Camera/Celestial/Satellite/Render API
+│   │   │   ├── persistence/# 配置持久化
+│   │   │   ├── error/      # 错误处理与隔离
+│   │   │   └── performance/# 性能监控
 │   │   ├── config/         # 配置文件
 │   │   ├── data/           # 数据加载器
 │   │   └── types/          # TypeScript 类型
@@ -94,10 +100,13 @@ cxic/
 | Planet.ts | 行星渲染 |
 | GalaxyRenderer.ts | 银河系渲染 |
 | LocalGroupRenderer.ts | 本星系群渲染 |
+| NearbyGroupsRenderer.ts | 近邻星系群渲染 |
 | VirgoSuperclusterRenderer.ts | 室女座超星系团渲染 |
 | LaniakeaSuperclusterRenderer.ts | 拉尼亚凯亚渲染 |
 | LODManager.ts | 细节层次管理 |
 | FrustumCullingOptimizer.ts | 视锥剔除 |
+| MemoryManager.ts | 内存管理 |
+| OptimizedParticleSystem.ts | 自定义着色器粒子系统 |
 
 ### Cesium 集成 (src/lib/cesium/)
 
@@ -109,12 +118,24 @@ cxic/
 | CoordinateTransformer.ts | 坐标转换 |
 | imageryProviders.ts | 影像源配置 |
 
+### MOD 管理器 (src/lib/mod-manager/)
+
+| 模块 | 说明 |
+|------|------|
+| core/ModRegistry.ts | MOD 注册表 |
+| core/DependencyResolver.ts | 依赖解析器（拓扑排序 + 循环检测） |
+| api/ | Time / Camera / Celestial / Satellite / Render API |
+| persistence/ | localStorage 配置持久化 |
+| error/ModError.ts | 错误类型与隔离策略 |
+| error/ErrorBoundary.ts | 错误边界组件 |
+| performance/ | 性能监控器 |
+
 ### 数据加载 (src/lib/data/)
 
 | 模块 | 说明 |
 |------|------|
 | EphemerisLoader.ts | 星历数据加载 |
-| UniverseDataLoader.ts | 宇宙数据加载 |
+| UniverseDataLoader.ts | 宇宙数据加载（支持 4 种格式） |
 | SatelliteDataLoader.ts | 卫星数据加载 |
 
 ---

@@ -17,6 +17,9 @@ import { initModManager, autoEnableMods } from "@/lib/mod-manager";
 import { registerCoreMods } from "@/lib/mods";
 import { useModStore } from "@/lib/mod-manager/store";
 import { useModManager } from "@/hooks/useModManager";
+import WeatherDisasterOverlay from "@/components/weather-disaster/WeatherDisasterOverlay";
+import SpaceLaunchOverlay from "@/components/space-launches/SpaceLaunchOverlay";
+import GlobalTrafficOverlay from "@/components/global-traffic/GlobalTrafficOverlay";
 
 /**
  * Info button component for top-right corner.
@@ -162,6 +165,9 @@ export default function SolarSystemPage() {
   // 从MOD状态读取功能启用状态
   const cesiumModEnabled = useModStore((state) => state.mods['cesium-integration']?.state === 'enabled');
   const satelliteModEnabled = useModStore((state) => state.mods['satellite-tracking']?.state === 'enabled');
+  const weatherDisasterModEnabled = useModStore((state) => state.mods['weather-disaster']?.state === 'enabled');
+  const globalTrafficModEnabled = useModStore((state) => state.mods['global-traffic']?.state === 'enabled');
+  const spaceLaunchesModEnabled = useModStore((state) => state.mods['space-launches']?.state === 'enabled');
 
   // cesiumEnabled 由 MOD 状态 + 用户手动切换共同决定
   const [userCesiumEnabled, setUserCesiumEnabled] = useState(true);
@@ -222,6 +228,9 @@ export default function SolarSystemPage() {
       <InfoButton onClick={() => setIsInfoModalOpen(true)} lang={lang} />
       <EphemerisButton onClick={() => setIsEphemerisStatusOpen(true)} lang={lang} />
       <ModManagerButton lang={lang} />
+      {weatherDisasterModEnabled && <WeatherDisasterOverlay lang={lang} />}
+      {spaceLaunchesModEnabled && <SpaceLaunchOverlay lang={lang} />}
+      {globalTrafficModEnabled && <GlobalTrafficOverlay lang={lang} />}
       <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
       <EphemerisStatusPanel isOpen={isEphemerisStatusOpen} onClose={() => setIsEphemerisStatusOpen(false)} />
       

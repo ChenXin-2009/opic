@@ -1,10 +1,10 @@
 # CXIC — CXIN Integrated Cosmos
 
-**Interactive Solar System & Universe Visualization**
+**A web-based multi-scale universe visualization and astronomical data integration system**
 
 ## Project Overview
 
-CXIC is a web-based multi-scale universe visualization and astronomical data integration system built with Three.js, Cesium, and Next.js. Through real astronomical data and precise orbital calculations, it presents a dynamic simulation from the Earth's surface to the edge of the observable universe.
+CXIC is an interactive universe visualization application built with Three.js, Cesium, and Next.js. Through real astronomical data and precise orbital calculations, it presents a dynamic simulation from the Earth's surface to the edge of the observable universe.
 
 The project started in November 2025, developed and maintained by a high school student during holidays.
 
@@ -121,4 +121,4 @@ Apache License 2.0
 
 ---
 
-*Project maintained by an individual, started in November 2025 when the developer was a high school student with only holidays available for development*
+*Project maintained by an individual, started in November 2025*

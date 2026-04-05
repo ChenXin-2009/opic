@@ -4,7 +4,7 @@
  * 显示卫星的完整详细信息，支持实时数据更新
  */
 
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSatelliteStore } from '@/lib/store/useSatelliteStore';
 import { SatelliteDetailData } from '@/lib/types/satellite';
 
@@ -164,6 +164,13 @@ function SatelliteDetailContent({ data, lang = 'zh' }: SatelliteDetailContentPro
 
   // 使用本地状态存储实时数据，每秒更新
   const [realTimeData, setRealTimeData] = useState(data.realTimeData);
+  const [velocityVector, setVelocityVector] = useState<{ x: number; y: number; z: number } | null>(null);
+  const [passes, setPasses] = useState<any[]>([]);
+  const [loadingPasses, setLoadingPasses] = useState(false);
+  const [passesLoaded, setPassesLoaded] = useState(false);
+  const [showPasses, setShowPasses] = useState(false);
+  const [obsLat, setObsLat] = useState(39.9);
+  const [obsLon, setObsLon] = useState(116.4);
 
   // 每秒更新实时数据
   useEffect(() => {
@@ -211,6 +218,16 @@ function SatelliteDetailContent({ data, lang = 'zh' }: SatelliteDetailContentPro
       };
 
       setRealTimeData(newData);
+
+      // 速度矢量（AU/s → km/s）
+      const AU_TO_KM_S = 149597870.7;
+      if (typeof velocityValue === 'object' && 'x' in velocityValue) {
+        setVelocityVector({
+          x: (velocityValue as any).x * AU_TO_KM_S,
+          y: (velocityValue as any).y * AU_TO_KM_S,
+          z: (velocityValue as any).z * AU_TO_KM_S,
+        });
+      }
     };
 
     // 立即更新一次
@@ -221,6 +238,23 @@ function SatelliteDetailContent({ data, lang = 'zh' }: SatelliteDetailContentPro
 
     return () => clearInterval(interval);
   }, [data.noradId]);
+
+  // 过境预测
+  const fetchPasses = useCallback(async () => {
+    setLoadingPasses(true);
+    try {
+      const res = await fetch(
+        `/api/satellites/passes?noradId=${data.noradId}&lat=${obsLat}&lon=${obsLon}&days=3`
+      );
+      if (res.ok) {
+        const d = await res.json();
+        setPasses(d.passes || []);
+        setPassesLoaded(true);
+      }
+    } catch { /* ignore */ } finally {
+      setLoadingPasses(false);
+    }
+  }, [data.noradId, obsLat, obsLon]);
 
   // 使用useMemo缓存翻译文本
   const t = useMemo(() => ({
@@ -357,6 +391,83 @@ function SatelliteDetailContent({ data, lang = 'zh' }: SatelliteDetailContentPro
           </div>
         </section>
       )}
+
+      {/* 速度矢量 */}
+      {velocityVector && (
+        <section className="relative pl-4 border-l border-white/15">
+          <SectionTitle>{lang === 'zh' ? '速度矢量' : 'Velocity Vector'}</SectionTitle>
+          <div className="space-y-0">
+            <DataRow label="Vx" value={`${velocityVector.x.toFixed(3)} km/s`} />
+            <DataRow label="Vy" value={`${velocityVector.y.toFixed(3)} km/s`} />
+            <DataRow label="Vz" value={`${velocityVector.z.toFixed(3)} km/s`} />
+          </div>
+        </section>
+      )}
+
+      {/* 过境预测 */}
+      <section className="relative pl-4 border-l border-white/15">
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>{lang === 'zh' ? '过境预测' : 'Pass Predictions'}</SectionTitle>
+          <button
+            onClick={() => { setShowPasses(!showPasses); if (!passesLoaded && !showPasses) fetchPasses(); }}
+            className="text-xs text-white/50 hover:text-white/80 border border-white/20 px-2 py-0.5 transition-colors"
+            style={{ clipPath: 'polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)' }}
+          >
+            {showPasses ? (lang === 'zh' ? '收起' : 'Hide') : (lang === 'zh' ? '展开' : 'Show')}
+          </button>
+        </div>
+        {showPasses && (
+          <div>
+            {/* 观测点配置 */}
+            <div className="flex gap-2 mb-2">
+              <div className="flex items-center gap-1 flex-1">
+                <span className="text-xs text-gray-500">LAT</span>
+                <input type="number" value={obsLat} onChange={e => setObsLat(parseFloat(e.target.value)||0)}
+                  className="flex-1 bg-white/5 border border-white/10 text-white text-xs px-1.5 py-1 font-mono"
+                  step="0.1" min="-90" max="90" style={{ outline: 'none' }} />
+              </div>
+              <div className="flex items-center gap-1 flex-1">
+                <span className="text-xs text-gray-500">LON</span>
+                <input type="number" value={obsLon} onChange={e => setObsLon(parseFloat(e.target.value)||0)}
+                  className="flex-1 bg-white/5 border border-white/10 text-white text-xs px-1.5 py-1 font-mono"
+                  step="0.1" min="-180" max="180" style={{ outline: 'none' }} />
+              </div>
+              <button onClick={fetchPasses}
+                className="text-xs text-white/60 hover:text-white border border-white/20 px-2 py-1 transition-colors"
+                style={{ clipPath: 'polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)' }}>
+                {lang === 'zh' ? '计算' : 'Calc'}
+              </button>
+            </div>
+            {loadingPasses && <p className="text-xs text-gray-500 py-2">{lang === 'zh' ? '计算中...' : 'Computing...'}</p>}
+            {!loadingPasses && passes.length === 0 && passesLoaded && (
+              <p className="text-xs text-gray-500 py-2">{lang === 'zh' ? '未来3天内无可见过境' : 'No visible passes in 3 days'}</p>
+            )}
+            {passes.map((pass: any, i: number) => {
+              const start = new Date(pass.startTime);
+              const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+              const azLabel = (az: number) => dirs[Math.round(az/45)%8];
+              return (
+                <div key={i} className="mb-2 p-2 border border-white/10 bg-white/3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs text-white/80 font-mono">
+                      {start.toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})} {start.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+                    </span>
+                    <span className="text-xs font-bold px-1.5 py-0.5 border"
+                      style={{ color: pass.maxElevation>60?'#00d4aa':pass.maxElevation>30?'#ffd700':'#666', borderColor: 'currentColor' }}>
+                      {pass.maxElevation.toFixed(1)}°
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-xs text-gray-500">
+                    <div><div>{lang==='zh'?'升起':'Rise'}</div><div className="text-white/70 font-mono">{azLabel(pass.startAzimuth)} {pass.startAzimuth}°</div></div>
+                    <div className="text-center"><div>{lang==='zh'?'持续':'Dur'}</div><div className="text-white/70 font-mono">{Math.floor(pass.duration/60)}m{pass.duration%60}s</div></div>
+                    <div className="text-right"><div>{lang==='zh'?'落下':'Set'}</div><div className="text-white/70 font-mono">{azLabel(pass.endAzimuth)} {pass.endAzimuth}°</div></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* 物理特性 */}
       {data.physicalProperties && (

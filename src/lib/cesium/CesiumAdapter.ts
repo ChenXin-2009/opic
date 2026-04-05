@@ -445,7 +445,7 @@ export class CesiumAdapter {
     if (!this.isAvailable) return;
     
     try {
-      CameraSynchronizer.syncFromCesium(this.viewer.camera, threeCamera, earthPosition);
+      CameraSynchronizer.syncFromCesium(this.viewer.camera, threeCamera, earthPosition, this.viewer.clock.currentTime);
     } catch (error) {
       console.error('[CesiumAdapter] Reverse camera sync error:', error);
     }

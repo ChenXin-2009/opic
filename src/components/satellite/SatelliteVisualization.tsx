@@ -7,8 +7,8 @@
 'use client';
 
 import { Component, ReactNode } from 'react';
-import { SatelliteControls } from './SatelliteControls';
-import { SatelliteInfoPanel } from './SatelliteInfoPanel';
+import { SatelliteEnhancedControls } from './SatelliteEnhancedControls';
+import { SatelliteRealtimePanel } from './SatelliteRealtimePanel';
 import { SatelliteStats } from './SatelliteStats';
 
 // 明日方舟风格配置
@@ -186,11 +186,11 @@ export class SatelliteVisualization extends Component<
     // 正常渲染
     return (
       <>
-        {/* 卫星控制面板 */}
-        <SatelliteControls lang={lang} />
+        {/* 增强版卫星控制面板（含类别/轨道类型筛选） */}
+        <SatelliteEnhancedControls lang={lang} />
 
-        {/* 卫星信息面板 */}
-        <SatelliteInfoPanel lang={lang} />
+        {/* 增强版卫星信息面板（含实时位置/过境预测） */}
+        <SatelliteRealtimePanel lang={lang} />
 
         {/* 卫星统计信息 */}
         <SatelliteStats lang={lang} />

@@ -88,16 +88,32 @@ export class SGP4Calculator {
       return;
     }
 
-    // 处理所有待处理的请求
-    this.pendingRequests.forEach((pending, requestId) => {
+    // 按 requestId 精确匹配，避免串扰
+    const requestId = response.requestId;
+    if (requestId !== undefined) {
+      const pending = this.pendingRequests.get(requestId);
+      if (pending) {
+        if (response.type === 'result') {
+          pending.resolve(response.payload);
+        } else if (response.type === 'error') {
+          pending.reject(new Error(response.payload.errors?.join(', ') || '计算失败'));
+        }
+        this.pendingRequests.delete(requestId);
+      }
+      return;
+    }
+
+    // 兼容旧版 Worker（无 requestId）：resolve 最早的一个请求
+    const firstEntry = this.pendingRequests.entries().next().value;
+    if (firstEntry) {
+      const [id, pending] = firstEntry;
       if (response.type === 'result') {
         pending.resolve(response.payload);
       } else if (response.type === 'error') {
         pending.reject(new Error(response.payload.errors?.join(', ') || '计算失败'));
       }
-    });
-    
-    this.pendingRequests.clear();
+      this.pendingRequests.delete(id);
+    }
   }
 
   /**
@@ -124,7 +140,8 @@ export class SGP4Calculator {
       this.pendingRequests.set(requestId, { resolve, reject });
 
       try {
-        this.worker.postMessage(message);
+        // 把 requestId 带进消息，Worker 回传时用于精确匹配
+        this.worker.postMessage({ ...message, requestId });
       } catch (error) {
         this.pendingRequests.delete(requestId);
         reject(error);

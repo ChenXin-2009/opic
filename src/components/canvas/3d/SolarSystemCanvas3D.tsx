@@ -22,6 +22,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useSolarSystemStore } from '@/lib/state';
 import { useSatelliteStore } from '@/lib/store/useSatelliteStore';
 import { SceneManager } from '@/lib/3d/SceneManager';
+import { getRenderAPI } from '@/lib/mod-manager/api/RenderAPI';
 import { CameraController } from '@/lib/3d/CameraController';
 import { Planet } from '@/lib/3d/Planet';
 import { EarthPlanet } from '@/lib/3d/EarthPlanet';
@@ -300,7 +301,6 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
       cameraControllerRef.current.setEarthLockMode(earthLockEnabled);
     }
   }, [earthLockEnabled]);
-
   // 初始化场景 - 使用 useLayoutEffect 确保 DOM 准备好
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -351,6 +351,9 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
       }
       
       const renderer = sceneManager.getRenderer();
+      
+      // 向 MOD 渲染 API 注入 Three.js 上下文，使 MOD 可以访问场景
+      getRenderAPI()._setThreeContext(scene, camera, renderer);
       
       // 创建 CSS2DRenderer 用于显示标记圈
       // 确保只创建一次，避免重复添加
@@ -502,6 +505,8 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
         // 暴露真实半径，供相机约束或其他逻辑使用（单位：AU）
         (planetMesh as any).userData = (planetMesh as any).userData || {};
         (planetMesh as any).userData.radius = planet.getRealRadius();
+        // 设置 mesh 名字，供 MOD 渲染器（DisasterRenderer 等）按名字查找
+        planetMesh.name = body.name.toLowerCase();
         planetsRef.current.set(body.name.toLowerCase(), planet);
         
         // 如果是地球,注册到 SceneManager 并设置初始状态
@@ -965,8 +970,6 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
           sceneManagerRef.current.updateEarthPlanet(deltaTime);
         }
 
-        // 更新天空盒/星空位置（固定在相机空间）
-        // 优化：直接调用 SceneManager 的方法，避免每帧遍历整个场景树
         if (sceneManagerRef.current) {
           sceneManagerRef.current.updateSkyboxPosition(camera.position);
         }
@@ -1324,6 +1327,9 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
           onCameraDistanceChange(distanceToSun);
         }
 
+        // 执行 MOD 渲染前回调（脉冲动画等）
+        getRenderAPI()._executeBeforeRender();
+
         // 渲染顺序：先更新 controls，再渲染场景
         // 确保 OrbitControls 的 update() 在 render() 之前调用
         // 主渲染器和标签渲染器必须在同一帧同步执行，避免闪烁
@@ -1395,11 +1401,15 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
             
             // 更新渲染器的悬停状态
             satelliteRenderer.setHoveredSatellite(hoveredSatelliteId);
+            
+            // 悬停时显示轨道
+            satelliteLayerRef.current.setHoveredOrbit(hoveredSatelliteId);
           } else {
             // 离开地球视角时清除悬停状态
             useSatelliteStore.getState().setHoveredSatellite(null);
             if (satelliteLayerRef.current) {
               satelliteLayerRef.current.getRenderer().setHoveredSatellite(null);
+              satelliteLayerRef.current.setHoveredOrbit(null);
             }
           }
         } else {
@@ -1407,6 +1417,7 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
           useSatelliteStore.getState().setHoveredSatellite(null);
           if (satelliteLayerRef.current) {
             satelliteLayerRef.current.getRenderer().setHoveredSatellite(null);
+            satelliteLayerRef.current.setHoveredOrbit(null);
           }
         }
       };
@@ -1804,6 +1815,44 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
 
   // 注意：滚轮缩放现在由 CameraController 的 setupWheelZoom 处理
   // 这里不再需要额外的监听器，避免重复处理
+
+  // 监听 showOrbits 变化，驱动 SatelliteRenderer 显示/隐藏轨道
+  React.useEffect(() => {
+    let prevShowOrbits = new Set(useSatelliteStore.getState().showOrbits);
+
+    const unsubscribe = useSatelliteStore.subscribe((state) => {
+      const showOrbits = state.showOrbits;
+      if (showOrbits === prevShowOrbits) return;
+
+      const layer = satelliteLayerRef.current;
+      if (!layer) {
+        prevShowOrbits = new Set(showOrbits);
+        return;
+      }
+
+      // 新增的轨道
+      showOrbits.forEach((noradId) => {
+        if (!prevShowOrbits.has(noradId)) {
+          const tryShow = (attempts: number) => {
+            layer.showOrbitWithOffset(noradId).catch(() => {
+              if (attempts > 0) setTimeout(() => tryShow(attempts - 1), 600);
+            });
+          };
+          tryShow(8);
+        }
+      });
+
+      // 移除的轨道（安全调用）
+      prevShowOrbits.forEach((noradId) => {
+        if (!showOrbits.has(noradId)) {
+          try { layer.hideOrbit(noradId); } catch { /* ignore */ }
+        }
+      });
+
+      prevShowOrbits = new Set(showOrbits);
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <div 

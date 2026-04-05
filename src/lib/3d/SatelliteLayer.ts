@@ -454,7 +454,126 @@ export class SatelliteLayer {
   getCalculator(): SGP4Calculator {
     return this.calculator;
   }
-  
+
+  /**
+   * 显示卫星轨道（正确应用地球偏移和旋转）
+   *
+   * calculateOrbit 返回的点是 ECI→Three.js 坐标（相对地球中心）。
+   * 需要应用与 SatelliteLayer.update() 相同的旋转矩阵和地球位置偏移，
+   * 才能让轨道线与卫星点云对齐。
+   */
+  async showOrbitWithOffset(noradId: number): Promise<void> {
+    if (this.renderer.hasOrbit(noradId)) return;
+
+    const tleData = useSatelliteStore.getState().tleData.get(noradId);
+    if (!tleData) throw new Error(`no TLE for ${noradId}`);
+
+    const solarSystemState = useSolarSystemStore.getState();
+    const earthBody = solarSystemState.celestialBodies.find(
+      (b: any) => b.name.toLowerCase() === 'earth'
+    );
+    if (!earthBody) throw new Error('earth not found');
+
+    const earthPosition = new THREE.Vector3(earthBody.x, earthBody.y, earthBody.z);
+    const rotationMatrix = new THREE.Matrix4();
+    rotationMatrix.makeRotationX(THREE.MathUtils.degToRad(66.56));
+
+    // 直接在主线程用 satellite.js 计算，绕过 Worker 通信
+    const satLib = await import('satellite.js');
+    const satrec = satLib.twoline2satrec(tleData.line1, tleData.line2);
+
+    const meanMotionRadPerSec = satrec.no; // rad/min
+    const periodMinutes = (2 * Math.PI) / meanMotionRadPerSec;
+    const steps = 120;
+    const stepMinutes = periodMinutes / steps;
+
+    const AU_TO_KM = 149597870.7;
+    const worldPoints: THREE.Vector3[] = [];
+    const startDate = new Date();
+
+    for (let i = 0; i < steps; i++) {
+      const t = new Date(startDate.getTime() + i * stepMinutes * 60000);
+      const pv = satLib.propagate(satrec, t);
+      if (!pv || !pv.position || typeof pv.position === 'boolean') continue;
+      const pos = pv.position as { x: number; y: number; z: number };
+      // ECI km → Three.js AU，坐标轴转换与 eciToThreeJS 一致
+      const raw = new THREE.Vector3(
+        pos.x / AU_TO_KM,
+        pos.z / AU_TO_KM,
+        -pos.y / AU_TO_KM
+      );
+      raw.applyMatrix4(rotationMatrix).add(earthPosition);
+      worldPoints.push(raw);
+    }
+
+    if (worldPoints.length < 2) throw new Error(`not enough orbit points for ${noradId}`);
+
+    // 确定轨道类型
+    let orbitType = useSatelliteStore.getState().satellites.get(noradId)?.orbitType;
+    if (!orbitType) {
+      const { getOrbitType } = await import('../config/satelliteConfig');
+      const ecc = parseFloat('0.' + tleData.line2.substring(26, 33).trim());
+      const n = meanMotionRadPerSec / 60; // rad/s
+      const mu = 398600.4418;
+      const a = Math.pow(mu / (n * n), 1 / 3);
+      const alt = a * (1 - ecc) - 6371;
+      orbitType = getOrbitType(alt, ecc);
+    }
+
+    this.renderer.showOrbitFromPoints(noradId, worldPoints, orbitType);
+  }
+
+  /** 隐藏轨道（代理到 renderer） */
+  hideOrbit(noradId: number): void {
+    this.renderer.hideOrbit(noradId);
+  }
+
+  // ── 悬停轨道管理 ──────────────────────────────────────────
+  private hoveredOrbitId: number | null = null;
+  private pendingOrbits = new Set<number>();
+
+  setHoveredOrbit(noradId: number | null): void {
+    // 清除上一个悬停轨道（仅当它不在 showOrbits 里时才隐藏）
+    if (this.hoveredOrbitId !== null && this.hoveredOrbitId !== noradId) {
+      const showOrbits = useSatelliteStore.getState().showOrbits;
+      if (!showOrbits.has(this.hoveredOrbitId)) {
+        this.renderer.hideOrbit(this.hoveredOrbitId);
+      }
+      this.hoveredOrbitId = null;
+    }
+
+    if (noradId === null) return;
+
+    this.hoveredOrbitId = noradId;
+
+    // 已经在显示或正在计算中，跳过
+    if (this.renderer.hasOrbit(noradId) || this.pendingOrbits.has(noradId)) return;
+
+    this.pendingOrbits.add(noradId);
+
+    const attempt = (retriesLeft: number) => {
+      this.showOrbitWithOffset(noradId)
+        .then(() => {
+          // 计算完成后，如果鼠标已经移走且不在 showOrbits 里，立即隐藏
+          if (this.hoveredOrbitId !== noradId) {
+            const showOrbits = useSatelliteStore.getState().showOrbits;
+            if (!showOrbits.has(noradId)) {
+              this.renderer.hideOrbit(noradId);
+            }
+          }
+          this.pendingOrbits.delete(noradId);
+        })
+        .catch(() => {
+          if (retriesLeft > 0 && this.hoveredOrbitId === noradId) {
+            setTimeout(() => attempt(retriesLeft - 1), 500);
+          } else {
+            this.pendingOrbits.delete(noradId);
+          }
+        });
+    };
+    attempt(6);
+  }
+
   /**
    * 清理资源
    * 

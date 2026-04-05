@@ -1692,7 +1692,6 @@ export class CameraController {
       this.controls.rotateSpeed = CAMERA_CONFIG.rotateSpeed * scale;
     }
     this.controls.update();
-
     // V8: controls.update() 之后同步 _quat/_quatInverse
     // 这样当前帧 update() 用旧 _quat（锁定正确），下一帧拖动用新 _quat（方向正确）
     if (this._pendingUpForQuat) {
