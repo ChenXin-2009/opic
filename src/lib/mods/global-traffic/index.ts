@@ -3,6 +3,7 @@
  */
 
 import type { ModLifecycleHooks, ModContext } from '@/lib/mod-manager/types';
+import * as THREE from 'three';
 import { globalTrafficManifest } from './manifest';
 import { TrafficRenderer } from './TrafficRenderer';
 import { DEMO_TRADE_ROUTES, DEMO_AIR_ROUTES, MAJOR_PORTS, MAJOR_AIRPORTS } from './demoData';
@@ -85,5 +86,6 @@ export function getGlobalTrafficMod() {
 // Re-exports for UI components
 export { globalTrafficManifest } from './manifest';
 export type { GlobalTrafficConfig, VesselPosition, FlightPosition, TradeRoute, Port } from './types';
-export { DEFAULT_CONFIG, TRAFFIC_DATA_SOURCES, DATA_SOURCE_MAP, CATEGORY_LABELS } from './dataSources';
+export { DEFAULT_CONFIG } from './types';
+export { TRAFFIC_DATA_SOURCES, DATA_SOURCE_MAP, CATEGORY_LABELS } from './dataSources';
 export { DEMO_TRADE_ROUTES, DEMO_AIR_ROUTES, MAJOR_PORTS, MAJOR_AIRPORTS } from './demoData';

@@ -3,6 +3,7 @@
  */
 
 import type { ModLifecycleHooks, ModContext } from '@/lib/mod-manager/types';
+import * as THREE from 'three';
 import { weatherDisasterManifest } from './manifest';
 import { DisasterRenderer } from './DisasterRenderer';
 
