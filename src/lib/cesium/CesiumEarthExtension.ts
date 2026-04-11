@@ -156,6 +156,51 @@ export class CesiumEarthExtension {
   }
 
   /**
+   * 设置地形启用状态
+   * @param enabled - 是否启用地形
+   */
+  async setTerrainEnabled(enabled: boolean): Promise<void> {
+    // 通过访问私有属性viewer来检查是否可用
+    const viewer = this.adapter['viewer'];
+    if (!viewer) return;
+    
+    try {
+      if (enabled) {
+        // 启用地形
+        const terrainProvider = await (window as any).Cesium.createWorldTerrainAsync({
+          requestWaterMask: true,
+          requestVertexNormals: true,
+        });
+        viewer.terrainProvider = terrainProvider;
+      } else {
+        // 禁用地形，使用椭球体
+        viewer.terrainProvider = new (window as any).Cesium.EllipsoidTerrainProvider();
+      }
+    } catch (error) {
+      console.error('[CesiumEarthExtension] Failed to set terrain:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 设置影像启用状态
+   * @param enabled - 是否启用影像
+   */
+  setImageryEnabled(enabled: boolean): void {
+    const viewer = this.adapter['viewer'];
+    if (!viewer) return;
+    
+    try {
+      const imageryLayers = viewer.imageryLayers;
+      if (imageryLayers.length > 0) {
+        imageryLayers.get(0).show = enabled;
+      }
+    } catch (error) {
+      console.error('[CesiumEarthExtension] Failed to set imagery:', error);
+    }
+  }
+
+  /**
    * 获取瓦片加载状态
    *
    * 可用于 UI 进度指示，判断地球瓦片是否已加载完毕。

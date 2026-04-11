@@ -2274,27 +2274,14 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
           const earthPlanet = planetsRef.current.get('earth');
           if (!earthPlanet) return;
           
-          const cesiumExtension = earthPlanet.getCesiumExtension?.();
+          // 类型检查：确保是 EarthPlanet 实例
+          if (!('getCesiumExtension' in earthPlanet)) return;
+          
+          const cesiumExtension = (earthPlanet as EarthPlanet).getCesiumExtension();
           if (!cesiumExtension) return;
           
-          const adapter = cesiumExtension.getAdapter?.();
-          if (!adapter || !adapter.isAvailable) return;
-          
-          const viewer = adapter.getViewer?.();
-          if (!viewer) return;
-          
           try {
-            if (enabled) {
-              // 启用地形
-              const terrainProvider = await window.Cesium.createWorldTerrainAsync({
-                requestWaterMask: true,
-                requestVertexNormals: true,
-              });
-              viewer.terrainProvider = terrainProvider;
-            } else {
-              // 禁用地形，使用椭球体
-              viewer.terrainProvider = new window.Cesium.EllipsoidTerrainProvider();
-            }
+            await cesiumExtension.setTerrainEnabled(enabled);
           } catch (error) {
             console.error('[RenderingDebug] Failed to toggle terrain:', error);
           }
@@ -2308,23 +2295,13 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
           const earthPlanet = planetsRef.current.get('earth');
           if (!earthPlanet) return;
           
-          const cesiumExtension = earthPlanet.getCesiumExtension?.();
+          // 类型检查：确保是 EarthPlanet 实例
+          if (!('getCesiumExtension' in earthPlanet)) return;
+          
+          const cesiumExtension = (earthPlanet as EarthPlanet).getCesiumExtension();
           if (!cesiumExtension) return;
           
-          const adapter = cesiumExtension.getAdapter?.();
-          if (!adapter || !adapter.isAvailable) return;
-          
-          const viewer = adapter.getViewer?.();
-          if (!viewer) return;
-          
-          try {
-            const imageryLayers = viewer.imageryLayers;
-            if (imageryLayers.length > 0) {
-              imageryLayers.get(0).show = enabled;
-            }
-          } catch (error) {
-            console.error('[RenderingDebug] Failed to toggle imagery:', error);
-          }
+          cesiumExtension.setImageryEnabled(enabled);
         },
         
         /**
@@ -2348,7 +2325,7 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
             if (key === 'sun' || key === 'earth') return;
             
             const mesh = planet.getMesh();
-            if (mesh && mesh.material) {
+            if (mesh && mesh instanceof THREE.Mesh && mesh.material) {
               const material = mesh.material as THREE.Material;
               if ('opacity' in material) {
                 material.transparent = clampedOpacity < 1;
