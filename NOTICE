@@ -1,8 +1,8 @@
-SoMap - Solar System Real-time Map
-Copyright 2025 github.com/ChenXin-2009
+CXIC - Multi-scale Universe Visualization and Astronomical Data Integration System
+Copyright 2025 ChenXin-2009 (https://github.com/ChenXin-2009)
 
 This product includes software developed at:
-- Project Repository: https://github.com/ChenXin-2009/somap
+- Project Repository: https://github.com/ChenXin-2009/cxic
 
 ================================================================================
 
@@ -63,6 +63,10 @@ This software includes the following open source components:
   Copyright (c) 2010-2024 three.js authors
   https://github.com/mrdoob/three.js
 
+- Cesium (Apache License 2.0)
+  Copyright (c) 2011-2024 Cesium Contributors
+  https://github.com/CesiumGS/cesium
+
 - satellite.js (MIT License)
   Copyright (c) 2013 Shashwat Kandadai and UCSC
   https://github.com/shashwatak/satellite-js
@@ -76,20 +80,3 @@ This software includes the following open source components:
   https://github.com/remarkjs/react-markdown
 
 For a complete list of dependencies and their licenses, see package.json
-
-================================================================================
-
-DISCLAIMER:
-
-This software is provided for educational and entertainment purposes only.
-While we strive for data accuracy, we do not guarantee the absolute precision
-of all astronomical data and calculations.
-
-This software is not suitable for use in safety-critical environments such as
-nuclear facilities, aircraft navigation or communication systems, air traffic
-control, life support machines, or weapons systems, where software failure
-could directly lead to death, personal injury, or severe physical or
-environmental damage.
-
-Users expressly understand and agree that the authors are not liable for any
-losses or damages resulting from the use of this software in high-risk activities.
