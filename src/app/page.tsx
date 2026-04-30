@@ -58,8 +58,8 @@ export default function SolarSystemPage() {
         clearInterval(interval);
       }
       setInitProgress(prev => {
-        // 只在场景初始化之前更新
-        if (prev.stage === 'loading' || prev.stage === 'idle') {
+        // 只在场景初始化之前更新，且进度只能前进
+        if ((prev.stage === 'loading' || prev.stage === 'idle') && progress > prev.progress) {
           return { stage: 'loading', progress, isComplete: false };
         }
         return prev;
@@ -176,7 +176,13 @@ export default function SolarSystemPage() {
             onInitializationProgress={(stage, progress, isComplete) => {
               // 将场景初始化进度映射到 60-100% 范围
               const mappedProgress = 60 + (progress * 0.4);
-              setInitProgress({ stage, progress: mappedProgress, isComplete });
+              setInitProgress(prev => {
+                // 进度只能前进，不能后退（防止重复初始化导致进度跳回）
+                if (mappedProgress > prev.progress || isComplete) {
+                  return { stage, progress: mappedProgress, isComplete };
+                }
+                return prev;
+              });
             }}
           />
         </div>
