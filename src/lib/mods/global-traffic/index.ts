@@ -74,6 +74,19 @@ export const globalTrafficHooks: ModLifecycleHooks = {
   onError: (error: Error, context: ModContext) => {
     context.logger.error('[Global Traffic] 错误:', error);
   },
+  
+  // 命令处理器
+  handleToggle: (context: ModContext) => {
+    context.logger.info('[Global Traffic] 切换全球交通监测显示');
+    
+    // 触发打开窗口的事件
+    context.emit('mod:open-window', {
+      modId: 'global-traffic',
+      windowId: 'global-traffic-window',
+      title: 'Global Traffic & Trade Routes',
+      titleZh: '全球货运与贸易路线',
+    });
+  },
 };
 
 export function getGlobalTrafficMod() {

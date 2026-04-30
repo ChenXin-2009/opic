@@ -11,7 +11,7 @@ export const spaceLaunchesManifest: ModManifest = {
   nameZh: '商业航天发射追踪',
   description: 'Real-time commercial space launch tracking: launch schedules, orbital insertions, mission progress and trajectory data from multiple public sources',
   descriptionZh: '实时商业航天发射追踪：发射时间表、轨道插入、任务进度和轨道数据，支持多种公开数据源',
-  author: 'CXIC Team',
+  author: 'OPIC',
   entryPoint: 'onLoad',
   hasConfig: true,
   defaultEnabled: false,
@@ -26,6 +26,28 @@ export const spaceLaunchesManifest: ModManifest = {
   optionalPermissions: [
     'network:read',   // 读取网络数据（可选）
   ],
+  
+  // 新架构：扩展点声明
+  contributes: {
+    dockIcons: [
+      {
+        id: 'space-launches-icon',
+        icon: '🚀',
+        label: 'Space Launch Tracker',
+        labelZh: '商业航天发射追踪',
+        command: 'space-launches.toggle',
+        badge: 0,
+      }
+    ],
+    commands: [
+      {
+        id: 'toggle',
+        title: 'Toggle Space Launch Tracker',
+        titleZh: '切换航天发射追踪',
+        handler: 'handleToggle',
+      }
+    ]
+  },
   
   // 旧字段保留以兼容
   capabilities: [

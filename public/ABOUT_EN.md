@@ -1,10 +1,10 @@
-# CXIC — CXIN Integrated Cosmos
+# OPIC — Open Integrated Cosmos
 
 **A web-based multi-scale universe visualization and astronomical data integration system**
 
 ## Project Overview
 
-CXIC is an interactive universe visualization application built with Three.js, Cesium, and Next.js. Through real astronomical data and precise orbital calculations, it presents a dynamic simulation from the Earth's surface to the edge of the observable universe.
+OPIC is an interactive universe visualization application built with Three.js, Cesium, and Next.js. Through real astronomical data and precise orbital calculations, it presents a dynamic simulation from the Earth's surface to the edge of the observable universe.
 
 The project started in November 2025, developed and maintained by a high school student during holidays.
 

@@ -392,10 +392,10 @@ export const HEADER_CONFIG = {
   borderColor: 'rgba(255, 255, 255, 0.1)',
   
   // 网站标题文本
-  titleText: 'CXIC宇宙集成系统',
+  titleText: 'OPIC开放宇宙集成系统',
   
   // 网站副标题文本
-  subtitleText: 'somap.cxin.tech',
+  subtitleText: 'opic.cxin.tech',
   
   // 标题字体大小（像素）
   titleFontSize: 24,

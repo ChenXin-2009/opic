@@ -191,7 +191,7 @@ interface LogoProps {
   alt?: string;
 }
 
-function Logo({ size, alt = 'CXIC Logo' }: LogoProps): React.ReactElement {
+function Logo({ size, alt = 'OPIC Logo' }: LogoProps): React.ReactElement {
   return (
     <Image
       src={HEADER_CONFIG.logoPath}

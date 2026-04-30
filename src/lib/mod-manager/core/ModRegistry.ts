@@ -18,6 +18,7 @@ import { PermissionSystem } from '../permission/PermissionSystem';
 import { ContributionRegistry } from '../contribution/ContributionRegistry';
 import { ServiceRegistry } from '../service/ServiceRegistry';
 import { Sandbox } from '../sandbox/Sandbox';
+import { WindowManager } from '../contribution/WindowManager';
 import { getEventBus } from './EventBus';
 
 /**
@@ -34,13 +35,16 @@ export class ModRegistry {
   private contributionRegistry: ContributionRegistry;
   private serviceRegistry: ServiceRegistry;
   private sandbox: Sandbox;
+  private windowManager: WindowManager;
 
   constructor() {
     // 初始化新系统
+    const eventBus = getEventBus();
     this.permissionSystem = new PermissionSystem(this);
-    this.contributionRegistry = new ContributionRegistry(this, getEventBus());
+    this.contributionRegistry = new ContributionRegistry(this, eventBus);
     this.serviceRegistry = new ServiceRegistry(this.permissionSystem, this);
     this.sandbox = new Sandbox();
+    this.windowManager = new WindowManager(eventBus);
   }
 
   /**
@@ -265,6 +269,13 @@ export class ModRegistry {
    */
   getSandbox(): Sandbox {
     return this.sandbox;
+  }
+
+  /**
+   * 获取窗口管理器
+   */
+  getWindowManager(): WindowManager {
+    return this.windowManager;
   }
 }
 

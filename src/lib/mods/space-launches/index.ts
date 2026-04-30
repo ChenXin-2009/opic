@@ -50,6 +50,19 @@ export const spaceLaunchesHooks: ModLifecycleHooks = {
   onError: (error: Error, context: ModContext) => {
     context.logger.error('[Space Launches] 错误:', error);
   },
+  
+  // 命令处理器
+  handleToggle: (context: ModContext) => {
+    context.logger.info('[Space Launches] 切换航天发射追踪显示');
+    
+    // 触发打开窗口的事件
+    context.emit('mod:open-window', {
+      modId: 'space-launches',
+      windowId: 'space-launches-window',
+      title: 'Space Launch Tracker',
+      titleZh: '商业航天发射追踪',
+    });
+  },
 };
 
 export function getSpaceLaunchesMod() {

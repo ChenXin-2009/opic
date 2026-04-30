@@ -107,7 +107,7 @@ export function SettingsWindow({ cameraController }: SettingsWindowProps) {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-white/60">{t('common.author')}</span>
-            <span className="font-mono font-semibold text-white">CXIN</span>
+            <span className="font-mono font-semibold text-white">OPIC</span>
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://somap.cxin.tech/sitemap.xml
+Sitemap: https://opic.cxin.tech/sitemap.xml
 
 # Disallow crawling of API routes
 Disallow: /api/

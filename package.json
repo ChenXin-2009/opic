@@ -1,11 +1,12 @@
 {
-  "name": "cxic",
+  "name": "opic",
   "version": "1.1.0",
-  "description": "一个基于 Web 的多尺度宇宙可视化与天文数据集成系统",
+  "description": "一个基于 Web 的多尺度宇宙可视化与天文数据集成系统 - Open Integrated Cosmos",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "npm run generate-mods",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
@@ -14,6 +15,7 @@
     "test:coverage": "jest --coverage",
     "quality:check": "npm run lint && tsc --noEmit",
     "convert-ucs-data": "npx tsx scripts/convert-ucs-data.ts",
+    "generate-mods": "node scripts/generate-mod-registry.js",
     "prepare": "node -e \"try { require('husky').install() } catch (e) {}\""
   },
   "dependencies": {

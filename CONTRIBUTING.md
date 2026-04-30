@@ -1,6 +1,25 @@
-# Contributing to CXIC
+# Contributing to OPIC
 
-感谢你有兴趣为 CXIC 做贡献！CXIC 是一个基于 Web 的多尺度宇宙可视化系统，从地球表面到可观测宇宙边缘。
+感谢你有兴趣为 OPIC 做贡献！OPIC 是一个基于 Web 的多尺度宇宙可视化系统，从地球表面到可观测宇宙边缘。
+
+## 🤖 欢迎 AI 协作
+
+我们热烈欢迎并鼓励使用 AI 工具和代理辅助的贡献！无论你是人类开发者还是 AI 助手，都是我们社区的重要成员。
+
+### AI 贡献指南
+
+- ✅ **欢迎使用 AI 工具**：GitHub Copilot、Cursor、Kiro、Claude、ChatGPT 等
+- ✅ **AI 辅助的代码审查**：使用 AI 帮助发现潜在问题
+- ✅ **AI 生成的文档**：改进文档质量和多语言支持
+- ✅ **AI 辅助的测试**：生成测试用例和边界条件
+- ✅ **透明度**：在 PR 中说明使用了 AI 工具（可选但推荐）
+
+### AI 贡献最佳实践
+
+1. **代码质量优先**：确保 AI 生成的代码通过所有测试和类型检查
+2. **理解代码**：不要盲目提交 AI 生成的代码，确保你理解其工作原理
+3. **遵循项目规范**：AI 生成的代码应符合项目的编码风格和架构
+4. **人工审查**：对 AI 生成的代码进行人工审查和优化
 
 ## 快速开始
 
@@ -13,8 +32,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/ChenXin-2009/somap.git
-cd somap
+git clone https://github.com/ChenXin-2009/OPIC.git
+cd OPIC
 
 # 安装依赖
 npm install
@@ -27,7 +46,7 @@ npm run dev
 
 ## 项目架构
 
-CXIC 采用双引擎架构，并正在向模块化插件架构（MOD Manager）演进：
+OPIC 采用双引擎架构，并正在向模块化插件架构（MOD Manager）演进：
 
 ```
 src/
@@ -191,9 +210,9 @@ import { CesiumDebugPanel } from '@/components/debug/CesiumDebugPanel';
 
 ## 有问题？
 
-- 在 [Issue](https://github.com/ChenXin-2009/somap/issues) 中提问
+- 在 [Issue](https://github.com/ChenXin-2009/OPIC/issues) 中提问
 - 联系 [@ChenXin-2009](https://github.com/ChenXin-2009)
 
 ---
 
-再次感谢你的贡献！
+再次感谢你的贡献！无论你是人类开发者还是 AI 助手，我们都期待你的参与！

@@ -38,6 +38,19 @@ export const cesiumIntegrationHooks: ModLifecycleHooks = {
   onError: (error: Error, context: ModContext) => {
     context.logger.error('[Cesium Integration] MOD错误:', error);
   },
+  
+  // 命令处理器
+  handleToggle: (context: ModContext) => {
+    context.logger.info('[Cesium Integration] 切换Cesium地球显示');
+    
+    // 触发打开窗口的事件
+    context.emit('mod:open-window', {
+      modId: 'cesium-integration',
+      windowId: 'cesium-integration-window',
+      title: 'Cesium Earth',
+      titleZh: 'Cesium 地球',
+    });
+  },
 };
 
 /**

@@ -155,7 +155,7 @@ export default function LoadingPage({
       >
         <img 
           src="/LOGO/logolw.svg" 
-          alt="CXIC Logo" 
+          alt="OPIC Logo" 
           style={{
             width: '400px',
             height: '400px',

@@ -25,8 +25,8 @@ const geistMono = Geist_Mono({
 
 // 多语言 metadata
 const metadataZh: Metadata = {
-  title: "CXIC宇宙集成系统",
-  description: "CXIC — CXIN Integrated Cosmos(CXIC 宇宙集成系统)- 一个基于 Web 的多尺度宇宙可视化与天文数据集成系统。基于真实天文数据，探索从太阳系到可观测宇宙的9个尺度层次。支持高精度行星轨道计算、人造卫星实时追踪、银河系可视化。",
+  title: "OPIC开放宇宙集成系统",
+  description: "OPIC — Open Integrated Cosmos（OPIC 开放宇宙集成系统）- 一个基于 Web 的多尺度宇宙可视化与天文数据集成系统。基于真实天文数据，探索从太阳系到可观测宇宙的9个尺度层次。支持高精度行星轨道计算、人造卫星实时追踪、银河系可视化。",
   keywords: [
     "太阳系",
     "宇宙可视化",
@@ -40,22 +40,22 @@ const metadataZh: Metadata = {
     "Solar System",
     "Universe Visualization",
     "Astronomy",
-    "CXIC",
-    "CXIN Integrated Cosmos",
+    "OPIC",
+    "Open Integrated Cosmos",
   ],
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
-    url: 'https://somap.cxin.tech',
-    title: 'CXIC — CXIN Integrated Cosmos',
+    url: 'https://opic.cxin.tech',
+    title: 'OPIC — Open Integrated Cosmos',
     description: '一个基于 Web 的多尺度宇宙可视化与天文数据集成系统，探索从太阳系到可观测宇宙',
-    siteName: 'CXIC',
+    siteName: 'OPIC',
   },
 };
 
 const metadataEn: Metadata = {
-  title: "CXIC - CXIN Integrated Cosmos",
-  description: "CXIC - A web-based multi-scale universe visualization and astronomical data integration system. Explore 9 cosmic scales from the solar system to the observable universe with real astronomical data. Features high-precision planetary orbit calculation, real-time satellite tracking, and Milky Way visualization.",
+  title: "OPIC - Open Integrated Cosmos",
+  description: "OPIC - A web-based multi-scale universe visualization and astronomical data integration system. Explore 9 cosmic scales from the solar system to the observable universe with real astronomical data. Features high-precision planetary orbit calculation, real-time satellite tracking, and Milky Way visualization.",
   keywords: [
     "Solar System",
     "Universe Visualization",
@@ -66,16 +66,16 @@ const metadataEn: Metadata = {
     "NASA",
     "Ephemeris Data",
     "Milky Way",
-    "CXIC",
-    "CXIN Integrated Cosmos",
+    "OPIC",
+    "Open Integrated Cosmos",
   ],
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://somap.cxin.tech',
-    title: 'CXIC — CXIN Integrated Cosmos',
+    url: 'https://opic.cxin.tech',
+    title: 'OPIC — Open Integrated Cosmos',
     description: 'A web-based multi-scale universe visualization system, exploring from the solar system to the observable universe',
-    siteName: 'CXIC',
+    siteName: 'OPIC',
   },
 };
 
@@ -101,7 +101,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'CXIC — CXIN Integrated Cosmos',
+      title: 'OPIC — Open Integrated Cosmos',
       description: lang === 'zh' 
         ? '一个基于 Web 的多尺度宇宙可视化与天文数据集成系统'
         : 'A web-based multi-scale universe visualization system',
@@ -172,8 +172,8 @@ export default async function RootLayout({
         {/* Dock 和窗口同步 */}
         <DockWindowSync />
         
-        {/* MOD 和 Dock 同步 */}
-        <ModDockSync />
+        {/* MOD 和 Dock 同步 - 已迁移到新架构（DockInitializer） */}
+        {/* <ModDockSync /> */}
         
         {children}
 

@@ -85,7 +85,7 @@ export default function SolarSystemPage() {
   useEffect(() => {
     const init = async () => {
       initModManager();
-      registerCoreMods();
+      await registerCoreMods(); // 改为 await
       // 自动启用 defaultEnabled 的 MOD
       await autoEnableMods();
     };

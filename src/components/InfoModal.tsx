@@ -90,11 +90,11 @@ export default function InfoModal({ isOpen, onClose }: InfoModalProps) {
             <div className="flex items-center gap-3 mb-2">
               <div className="w-1 h-8 bg-white/80" />
               <h2 className="text-3xl font-light text-white tracking-wider" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                SOMAP
+                OPIC
               </h2>
             </div>
             <div className="ml-4 pl-3 border-l border-white/20">
-              <p className="text-sm text-white/50 tracking-wide">SOLAR SYSTEM VISUALIZATION</p>
+              <p className="text-sm text-white/50 tracking-wide">OPEN INTEGRATED COSMOS</p>
             </div>
           </div>
           

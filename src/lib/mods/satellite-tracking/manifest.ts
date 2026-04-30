@@ -11,7 +11,7 @@ export const satelliteTrackingManifest: ModManifest = {
   nameZh: '卫星追踪',
   description: 'Real-time satellite tracking with live position, ground track, pass predictions, orbit visualization and coverage areas. Data from Celestrak TLE + UCS metadata.',
   descriptionZh: '实时卫星追踪：实时位置（经纬度/高度/速度）、地面轨迹、过境预测、3D轨道可视化、服务覆盖区域。数据来源：Celestrak TLE + UCS卫星数据库。',
-  author: 'CXIC Team',
+  author: 'OPIC',
   entryPoint: 'onLoad',
   hasConfig: true,
   defaultEnabled: true,
@@ -26,6 +26,34 @@ export const satelliteTrackingManifest: ModManifest = {
     'render:write',      // 注册渲染器
     'render:execute',    // 执行渲染回调
   ],
+  
+  // 新架构：扩展点声明
+  contributes: {
+    dockIcons: [
+      {
+        id: 'satellite-tracking-icon',
+        icon: '📡',
+        label: 'Satellite Tracking',
+        labelZh: '卫星追踪',
+        command: 'satellite-tracking.toggle',
+        badge: 0,
+      }
+    ],
+    commands: [
+      {
+        id: 'toggle',
+        title: 'Toggle Satellite Tracking',
+        titleZh: '切换卫星追踪',
+        handler: 'handleToggle',
+      },
+      {
+        id: 'refresh',
+        title: 'Refresh Satellite Data',
+        titleZh: '刷新卫星数据',
+        handler: 'handleRefresh',
+      }
+    ]
+  },
   
   // 旧字段保留以兼容
   capabilities: [

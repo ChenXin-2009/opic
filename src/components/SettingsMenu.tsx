@@ -394,7 +394,7 @@ export default function SettingsMenu({ cameraController }: SettingsMenuProps) {
                     className="text-xs font-mono font-bold"
                     style={{ color: ARKNIGHTS_CONFIG.colors.primary }}
                   >
-                    CXIN
+                    OPIC
                   </span>
                 </div>
               </div>

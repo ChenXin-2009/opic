@@ -24,12 +24,12 @@ export function AboutWindow({ lang = 'zh' }: AboutWindowProps) {
         <div className="flex items-center gap-3 mb-2">
           <div className="w-1 h-8 bg-blue-500" />
           <h2 className="text-2xl font-light text-white tracking-wider">
-            CXIC
+            OPIC
           </h2>
         </div>
         <div className="ml-4 pl-3 border-l border-white/20">
           <p className="text-sm text-white/50 tracking-wide">
-            CXIN INTEGRATED COSMOS
+            OPEN INTEGRATED COSMOS
           </p>
         </div>
       </div>

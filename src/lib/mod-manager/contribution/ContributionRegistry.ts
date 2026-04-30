@@ -314,15 +314,22 @@ export class ContributionRegistry {
         );
       }
 
-      // 调用命令处理器
-      const handler = (instance.context as any)[command.handler];
+      // 调用命令处理器 - 从 lifecycleHooks 中查找
+      const hooks = instance.lifecycleHooks;
+      if (!hooks) {
+        throw new ContributionError(
+          `MOD "${command.modId}" has no lifecycle hooks`
+        );
+      }
+
+      const handler = (hooks as any)[command.handler];
       if (typeof handler !== 'function') {
         throw new ContributionError(
           `Command handler "${command.handler}" not found in MOD "${command.modId}"`
         );
       }
 
-      await handler(...args);
+      await handler(instance.context, ...args);
 
       // 触发成功事件
       this.eventBus.emit('contribution:command-executed', {

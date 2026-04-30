@@ -50,6 +50,29 @@ export const satelliteTrackingHooks: ModLifecycleHooks = {
   onError: (error: Error, context: ModContext) => {
     context.logger.error('[Satellite Tracking] MOD错误:', error);
   },
+  
+  // 命令处理器
+  handleToggle: (context: ModContext) => {
+    context.logger.info('[Satellite Tracking] 切换卫星追踪显示');
+    
+    // 触发打开窗口的事件
+    context.emit('mod:open-window', {
+      modId: 'satellite-tracking',
+      windowId: 'satellite-tracking-window',
+      title: 'Satellite Tracking',
+      titleZh: '卫星追踪',
+    });
+  },
+  
+  handleRefresh: async (context: ModContext) => {
+    context.logger.info('[Satellite Tracking] 刷新卫星数据');
+    try {
+      await context.satellite.fetchSatellites();
+      context.logger.info('[Satellite Tracking] 卫星数据刷新完成');
+    } catch (error) {
+      context.logger.error('[Satellite Tracking] 卫星数据刷新失败:', error);
+    }
+  },
 };
 
 /**

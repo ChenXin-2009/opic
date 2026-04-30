@@ -62,6 +62,19 @@ export const weatherDisasterHooks: ModLifecycleHooks = {
   onError: (error: Error, context: ModContext) => {
     context.logger.error('[Weather Disaster] 错误:', error);
   },
+  
+  // 命令处理器
+  handleToggle: (context: ModContext) => {
+    context.logger.info('[Weather Disaster] 切换气象灾害监测显示');
+    
+    // 触发打开窗口的事件
+    context.emit('mod:open-window', {
+      modId: 'weather-disaster',
+      windowId: 'weather-disaster-window',
+      title: 'Weather & Disaster Monitor',
+      titleZh: '气象灾害监测',
+    });
+  },
 };
 
 export function getWeatherDisasterMod() {

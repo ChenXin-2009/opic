@@ -105,7 +105,7 @@ export default function InitializationOverlay({ progress, lang }: Initialization
       <div className="relative w-96 h-96 animate-pulse">
         <Image
           src="/LOGO/logolw.svg"
-          alt="CXIC Logo"
+          alt="OPIC Logo"
           fill
           priority
           style={{ objectFit: 'contain' }}

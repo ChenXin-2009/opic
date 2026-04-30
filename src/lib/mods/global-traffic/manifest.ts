@@ -11,7 +11,7 @@ export const globalTrafficManifest: ModManifest = {
   nameZh: '全球货运与贸易路线',
   description: 'Real-time tracking of global shipping lanes, flight routes, and trade corridors with multiple public data sources',
   descriptionZh: '实时追踪全球船舶航道、航班路线和贸易走廊，支持多种公开数据源',
-  author: 'CXIC Team',
+  author: 'OPIC',
   entryPoint: 'onLoad',
   hasConfig: true,
   configComponent: 'GlobalTrafficConfig',
@@ -27,6 +27,28 @@ export const globalTrafficManifest: ModManifest = {
   optionalPermissions: [
     'network:read',   // 读取网络数据（可选）
   ],
+  
+  // 新架构：扩展点声明
+  contributes: {
+    dockIcons: [
+      {
+        id: 'global-traffic-icon',
+        icon: '🚢',
+        label: 'Global Traffic & Trade Routes',
+        labelZh: '全球货运与贸易路线',
+        command: 'global-traffic.toggle',
+        badge: 0,
+      }
+    ],
+    commands: [
+      {
+        id: 'toggle',
+        title: 'Toggle Global Traffic Monitor',
+        titleZh: '切换全球交通监测',
+        handler: 'handleToggle',
+      }
+    ]
+  },
   
   // 旧字段保留以兼容
   capabilities: [

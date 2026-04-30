@@ -60,7 +60,7 @@ representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at
-[GitHub Issues](https://github.com/ChenXin-2009/somap/issues).
+[GitHub Issues](https://github.com/ChenXin-2009/OPIC/issues).
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the

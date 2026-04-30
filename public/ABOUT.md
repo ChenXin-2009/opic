@@ -1,10 +1,10 @@
-# CXIC — CXIN Integrated Cosmos（CXIC 宇宙集成系统）
+# OPIC — Open Integrated Cosmos（OPIC 开放宇宙集成系统）
 
 **基于 Web 的多尺度宇宙可视化与天文数据集成系统**
 
 ## 项目简介
 
-CXIC 是一个使用 Three.js、Cesium 和 Next.js 构建的交互式宇宙可视化应用。通过真实的天文数据和精确的轨道计算，为您呈现从地球表面到可观测宇宙边缘的动态模拟。
+OPIC 是一个使用 Three.js、Cesium 和 Next.js 构建的交互式宇宙可视化应用。通过真实的天文数据和精确的轨道计算，为您呈现从地球表面到可观测宇宙边缘的动态模拟。
 
 项目始于 2025 年 11 月，由一名高中生利用假期时间开发维护。
 

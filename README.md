@@ -1,10 +1,12 @@
-# CXIC — CXIN Integrated Cosmos
+# OPIC — Open Integrated Cosmos
 
 <div align="center">
-  <img src="public/LOGO/logolw.svg" alt="CXIC Logo" width="300">
+  <img src="public/LOGO/logolw.svg" alt="OPIC Logo" width="300">
 </div>
 
 **A web-based multi-scale universe visualization and astronomical data integration system**
+
+> **Note**: This project was formerly known as CXIC (CXIN Integrated Cosmos). See [Name Change Announcement](docs/NAME_CHANGE_ANNOUNCEMENT.md) for details.
 
 [中文文档](./README_CN.md)
 
@@ -12,7 +14,7 @@
 
 ## Overview
 
-CXIC is an interactive universe visualization application built with Three.js, Cesium, and Next.js. Using real astronomical data and precise orbital calculations, it presents a dynamic simulation from Earth's surface to the edge of the observable universe.
+OPIC is an interactive universe visualization application built with Three.js, Cesium, and Next.js. Using real astronomical data and precise orbital calculations, it presents a dynamic simulation from Earth's surface to the edge of the observable universe.
 
 The project is transitioning to a modular plugin architecture (MOD Manager system), allowing features to be independently loaded, configured, and toggled at runtime without restarting the application.
 
@@ -99,8 +101,8 @@ A modular plugin architecture that keeps the core system lightweight while allow
 
 ```bash
 # Clone the repository
-git clone https://github.com/ChenXin-2009/somap.git
-cd somap
+git clone https://github.com/ChenXin-2009/OPIC.git
+cd OPIC
 
 # Install dependencies
 npm install
@@ -162,7 +164,7 @@ npm start
 ## Project Structure
 
 ```
-cxic/
+opic/
 ├── src/
 │   ├── app/                    # Next.js app router
 │   ├── components/             # React components
@@ -258,11 +260,12 @@ This software is not suitable for environments requiring fail-safe performance. 
 
 ## Contributing
 
-Contributions are welcome!
+Contributions are welcome! We embrace collaboration from both human developers and AI assistants.
 
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for how to participate
 - Submit Issues to report bugs or suggest features
 - Submit Pull Requests to contribute code
+- **AI Contributions Welcome**: We encourage contributions assisted by AI tools and agents
 
 ## License
 
@@ -279,4 +282,5 @@ See [LICENSE](LICENSE) file for details.
 ## Contact
 
 - **GitHub**: [@ChenXin-2009](https://github.com/ChenXin-2009)
-- **Project**: [https://github.com/ChenXin-2009/somap](https://github.com/ChenXin-2009/somap)
+- **Project**: [https://github.com/ChenXin-2009/OPIC](https://github.com/ChenXin-2009/OPIC)
+- **Website**: [https://opic.cxin.tech](https://opic.cxin.tech)

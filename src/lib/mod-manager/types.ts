@@ -188,6 +188,10 @@ export interface ModLifecycleHooks {
   onDisable?: (context: ModContext) => void | Promise<void>;
   onUnload?: (context: ModContext) => void | Promise<void>;
   onError?: (error: Error, context: ModContext) => void;
+  
+  // 命令处理器（用于 contributes.commands）
+  // 任何以 handle 开头的方法都被视为命令处理器
+  [key: `handle${string}`]: ((context: ModContext, ...args: unknown[]) => void | Promise<void>) | undefined;
 }
 
 /**
@@ -458,9 +462,9 @@ export interface DependencyResolution {
  * localStorage键名
  */
 export const STORAGE_KEYS = {
-  ENABLED_MODS: 'cxic:mod-manager:enabled-mods',
-  MOD_CONFIGS: 'cxic:mod-manager:configs',
-  MOD_STATES: 'cxic:mod-manager:states',
+  ENABLED_MODS: 'opic:mod-manager:enabled-mods',
+  MOD_CONFIGS: 'opic:mod-manager:configs',
+  MOD_STATES: 'opic:mod-manager:states',
 } as const;
 
 /**

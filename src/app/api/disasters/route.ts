@@ -154,7 +154,7 @@ async function fetchNOAATsunami() {
 
 async function fetchReliefWeb() {
   const res = await fetch(
-    'https://api.reliefweb.int/v1/disasters?appname=cxic&limit=50&fields[include][]=name&fields[include][]=date&fields[include][]=country&fields[include][]=type&fields[include][]=status&filter[field]=status&filter[value]=ongoing',
+    'https://api.reliefweb.int/v1/disasters?appname=opic&limit=50&fields[include][]=name&fields[include][]=date&fields[include][]=country&fields[include][]=type&fields[include][]=status&filter[field]=status&filter[value]=ongoing',
     { next: { revalidate: 3600 } }
   );
   const json = await res.json();

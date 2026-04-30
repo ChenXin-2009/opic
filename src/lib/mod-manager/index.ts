@@ -2,7 +2,7 @@
  * @module mod-manager
  * @description MOD管理器主入口
  * 
- * MOD管理器为cxic多尺度宇宙可视化平台提供模块化、可插拔的架构。
+ * MOD管理器为OPIC多尺度宇宙可视化平台提供模块化、可插拔的架构。
  */
 
 // 类型导出
