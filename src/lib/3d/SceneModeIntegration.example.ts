@@ -208,7 +208,7 @@ export function exampleRegisterCallback() {
   const sceneModeManager = sceneManager.getSceneModeManager();
   
   // 注册回调
-  const unsubscribe = sceneModeManager.onModeChange((mode) => {
+  const unsubscribe = sceneModeManager.onModeChange((mode: SceneMode) => {
     console.log(`[SceneMode] Mode changed to: ${mode}`);
     
     // 可以在这里执行额外的处理
