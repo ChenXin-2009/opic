@@ -5,7 +5,7 @@
 欢迎使用 OPIC MOD 系统！本指南将帮助你开发功能强大且安全的 MOD，充分利用 OPIC 提供的企业级插件平台能力。
 
 <div align="center">
-  <img src="images/mod-manager-interface.gif" alt="MOD管理器界面" width="700">
+  <img src="images/mod-manager-interface.gif" alt="MOD管理器界面" width="300">
   <p><em>MOD 管理器界面与示例模组展示</em></p>
 </div>
 

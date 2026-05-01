@@ -21,7 +21,7 @@ The project is transitioning to a modular plugin architecture (MOD Manager syste
 ### Demo
 
 <div align="center">
-  <img src="docs/images/earth-to-universe-zoom.gif" alt="Earth to Universe Zoom Demo" width="800">
+  <img src="docs/images/earth-to-universe-zoom.gif" alt="Earth to Universe Zoom Demo" width="300">
   <p><em>Seamless zoom experience from Earth's surface buildings to the cosmic panorama</em></p>
 </div>
 
@@ -50,7 +50,7 @@ The project is transitioning to a modular plugin architecture (MOD Manager syste
 - Detailed satellite parameters and orbital elements
 
 <div align="center">
-  <img src="docs/images/satellite-tracking-demo.gif" alt="Satellite Tracking Demo" width="800">
+  <img src="docs/images/satellite-tracking-demo.gif" alt="Satellite Tracking Demo" width="300">
   <p><em>Real-time satellite orbit tracking and information display</em></p>
 </div>
 
@@ -82,7 +82,7 @@ A modular plugin architecture that keeps the core system lightweight while allow
 - Configuration persistence across sessions
 
 <div align="center">
-  <img src="docs/images/mod-manager-interface.gif" alt="MOD Manager Interface" width="800">
+  <img src="docs/images/mod-manager-interface.gif" alt="MOD Manager Interface" width="300">
   <p><em>MOD Manager interface with example modules</em></p>
 </div>
 

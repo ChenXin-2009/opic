@@ -5,17 +5,17 @@
 ## 项目演示
 
 <div align="center">
-  <img src="images/earth-to-universe-zoom.gif" alt="从地球到宇宙的缩放演示" width="700">
+  <img src="images/earth-to-universe-zoom.gif" alt="从地球到宇宙的缩放演示" width="300">
   <p><em>从地球表面到宇宙全景的无缝缩放</em></p>
 </div>
 
 <div align="center">
-  <img src="images/satellite-tracking-demo.gif" alt="卫星追踪演示" width="700">
+  <img src="images/satellite-tracking-demo.gif" alt="卫星追踪演示" width="300">
   <p><em>实时卫星轨道追踪与信息展示</em></p>
 </div>
 
 <div align="center">
-  <img src="images/mod-manager-interface.gif" alt="MOD管理器界面" width="700">
+  <img src="images/mod-manager-interface.gif" alt="MOD管理器界面" width="300">
   <p><em>MOD 管理器界面与示例模组</em></p>
 </div>
 
