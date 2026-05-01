@@ -25,8 +25,8 @@ const geistMono = Geist_Mono({
 
 // 多语言 metadata
 const metadataZh: Metadata = {
-  title: "OPIC开放宇宙集成系统",
-  description: "OPIC — Open Integrated Cosmos（OPIC 开放宇宙集成系统）- 一个基于 Web 的多尺度宇宙可视化与天文数据集成系统。基于真实天文数据，探索从太阳系到可观测宇宙的9个尺度层次。支持高精度行星轨道计算、人造卫星实时追踪、银河系可视化。",
+  title: "OPIC开放集成宇宙",
+  description: "OPIC — Open Integrated Cosmos（开放集成宇宙）- 一个基于 Web 的多尺度宇宙可视化与天文数据集成系统。基于真实天文数据，探索从太阳系到可观测宇宙的9个尺度层次。支持高精度行星轨道计算、人造卫星实时追踪、银河系可视化。",
   keywords: [
     "太阳系",
     "宇宙可视化",

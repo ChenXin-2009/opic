@@ -1,6 +1,6 @@
 # OPIC 项目文档索引
 
-本目录包含 OPIC (Open Integrated Cosmos) 宇宙集成系统的核心技术文档。
+本目录包含 OPIC (Open Integrated Cosmos) 开放集成宇宙的核心技术文档。
 
 ## 项目演示
 

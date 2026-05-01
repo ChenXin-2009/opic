@@ -392,7 +392,7 @@ export const HEADER_CONFIG = {
   borderColor: 'rgba(255, 255, 255, 0.1)',
   
   // 网站标题文本
-  titleText: 'OPIC开放宇宙集成系统',
+  titleText: 'OPIC开放集成宇宙',
   
   // 网站副标题文本
   subtitleText: 'opic.cxin.tech',

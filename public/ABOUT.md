@@ -1,4 +1,4 @@
-# OPIC — Open Integrated Cosmos（OPIC 开放宇宙集成系统）
+# OPIC — Open Integrated Cosmos（开放集成宇宙）
 
 **基于 Web 的多尺度宇宙可视化与天文数据集成系统**
 
