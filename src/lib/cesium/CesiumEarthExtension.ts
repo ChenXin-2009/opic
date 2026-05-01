@@ -149,6 +149,20 @@ export class CesiumEarthExtension {
   }
 
   /**
+   * 切换 Cesium 原生摄像机控制器
+   */
+  setNativeCameraEnabled(enabled: boolean): void {
+    this.adapter.setNativeCameraEnabled(enabled);
+  }
+
+  /**
+   * 获取 Cesium 相机球坐标（heading/pitch/distance），用于驱动 Three.js OrbitControls
+   */
+  getCesiumCameraSpherical(): { distance: number; heading: number; pitch: number } | null {
+    return this.adapter.getCesiumCameraSpherical();
+  }
+
+  /**
    * 获取瓦片加载状态
    *
    * 可用于 UI 进度指示，判断地球瓦片是否已加载完毕。

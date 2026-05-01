@@ -18,11 +18,19 @@
 
 'use client';
 
+// 扩展 Window 接口以支持调试变量
+declare global {
+  interface Window {
+    _lastModeDebugTime?: number;
+  }
+}
+
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useSolarSystemStore } from '@/lib/state';
 import { useSatelliteStore } from '@/lib/store/useSatelliteStore';
 import { useSceneStore } from '@/lib/state/sceneStore';
 import { SceneManager } from '@/lib/3d/SceneManager';
+import { SceneMode } from '@/lib/3d/SceneModeManager';
 import { getRenderAPI } from '@/lib/mod-manager/api/RenderAPI';
 import { CameraController } from '@/lib/3d/CameraController';
 import { Planet } from '@/lib/3d/Planet';
@@ -1044,9 +1052,157 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
         const earthBody = currentBodies.find((b: any) => b.name.toLowerCase() === 'earth');
         if (earthBody) {
           const earthPos = new THREE.Vector3(earthBody.x, earthBody.y, earthBody.z);
+          
+          // 在 Cesium 主导模式下，需要先从 Cesium 同步相机位置到 Three.js
+          // 这样才能正确计算距离并判断是否需要退出模式
+          if (sceneManagerRef.current) {
+            const sceneModeManager = sceneManagerRef.current.getSceneModeManager();
+            const currentMode = sceneModeManager.getCurrentMode();
+            
+            if (currentMode === SceneMode.CESIUM_DOMINANT) {
+              // Cesium 主导模式：先同步相机位置
+              const earthPlanet = planetsRef.current.get('earth');
+              if (earthPlanet && 'getCesiumExtension' in earthPlanet) {
+                const cesiumExt = (earthPlanet as any).getCesiumExtension();
+                if (cesiumExt) {
+                  // 从 Cesium 同步相机到 Three.js
+                  cesiumExt.syncCameraFromCesium(camera, earthPos);
+                }
+              }
+            }
+          }
+          
+          // 现在计算距离（使用同步后的相机位置）
           const cameraPos = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
           const distToEarth = cameraPos.distanceTo(earthPos);
           setDistanceToEarth(distToEarth);
+          
+          // ========== 场景模式切换逻辑 ==========
+          if (sceneManagerRef.current) {
+            // 添加调试日志
+            const sceneModeManager = sceneManagerRef.current.getSceneModeManager();
+            let currentMode = sceneModeManager.getCurrentMode();
+            const config = sceneModeManager.getConfig();
+            
+            // 每2秒输出一次距离和模式信息
+            const now = Date.now();
+            if (!window._lastModeDebugTime || now - window._lastModeDebugTime > 2000) {
+              window._lastModeDebugTime = now;
+              console.log(`[SceneMode] Distance: ${(distToEarth * 149597870.7).toFixed(0)} km (${distToEarth.toFixed(6)} AU), Mode: ${currentMode}, Thresholds: enter=${(config.cesiumModeDistanceThreshold * 149597870.7).toFixed(0)}km, exit=${(config.threeModeDistanceThreshold * 149597870.7).toFixed(0)}km`);
+            }
+            
+            const modeChanged = sceneManagerRef.current.updateSceneMode(distToEarth);
+            
+            if (modeChanged) {
+              const newMode = sceneModeManager.getCurrentMode();
+              
+              console.log(`[SceneMode] ========== MODE CHANGED ==========`);
+              console.log(`[SceneMode] Switched to: ${newMode}`);
+              console.log(`[SceneMode] Distance: ${(distToEarth * 149597870.7).toFixed(0)} km`);
+              
+              // 处理模式切换
+              const earthPlanet = planetsRef.current.get('earth');
+              
+              if (newMode === SceneMode.CESIUM_DOMINANT) {
+                // 切换到 Cesium 主导模式
+                console.log('[SceneMode] Switching to CESIUM_DOMINANT mode');
+                
+                // 1. 确保 Cesium 渲染已启用
+                if (earthPlanet && 'setCesiumEnabled' in earthPlanet) {
+                  (earthPlanet as any).setCesiumEnabled(true, camera);
+                }
+                
+                // 2. 设置为 Cesium 原生相机模式（停止 Three.js → Cesium 同步）
+                if (earthPlanet && 'setCesiumNativeCameraMode' in earthPlanet) {
+                  (earthPlanet as any).setCesiumNativeCameraMode(true);
+                }
+                
+                // 3. 在启用原生相机之前，先同步一次当前相机位置到 Cesium
+                if (earthPlanet && 'getCesiumExtension' in earthPlanet) {
+                  const cesiumExt = (earthPlanet as any).getCesiumExtension();
+                  if (cesiumExt) {
+                    // 同步当前 Three.js 相机位置到 Cesium
+                    cesiumExt.syncCamera(camera, earthPos);
+                    console.log('[SceneMode] Initial camera sync: Three.js → Cesium');
+                  }
+                }
+                
+                // 4. 启用 Cesium 原生相机控制
+                if (earthPlanet && 'getCesiumExtension' in earthPlanet) {
+                  const cesiumExt = (earthPlanet as any).getCesiumExtension();
+                  if (cesiumExt) {
+                    cesiumExt.setNativeCameraEnabled(true);
+                    console.log('[SceneMode] Cesium native camera enabled');
+                  }
+                }
+                
+                // 5. 禁用 Three.js OrbitControls
+                if (cameraControllerRef.current) {
+                  const controls = cameraControllerRef.current.getControls();
+                  controls.enabled = false;
+                  console.log('[SceneMode] Three.js OrbitControls disabled');
+                }
+                
+                // 6. 调整 canvas 层级：Three.js 在上层但透明，Cesium 在下层
+                const renderer = sceneManagerRef.current.getRenderer();
+                renderer.domElement.style.pointerEvents = 'none'; // Three.js 不接收事件
+                renderer.domElement.style.zIndex = '1'; // Three.js 在上层（渲染卫星等）
+                
+                console.log('[SceneMode] Canvas layers adjusted for CESIUM_DOMINANT');
+                
+              } else {
+                // 切换回 Three.js 主导模式
+                console.log('[SceneMode] Switching to THREE_DOMINANT mode');
+                
+                // 1. 在切换前，先从 Cesium 同步一次相机位置到 Three.js
+                //    确保 Three.js 相机从 Cesium 的最终位置开始
+                if (earthPlanet && 'getCesiumExtension' in earthPlanet) {
+                  const cesiumExt = (earthPlanet as any).getCesiumExtension();
+                  if (cesiumExt) {
+                    cesiumExt.syncCameraFromCesium(camera, earthPos);
+                    console.log('[SceneMode] Final camera sync: Cesium → Three.js');
+                  }
+                }
+                
+                // 2. 设置为 Three.js 相机模式（恢复 Three.js → Cesium 同步）
+                if (earthPlanet && 'setCesiumNativeCameraMode' in earthPlanet) {
+                  (earthPlanet as any).setCesiumNativeCameraMode(false);
+                }
+                
+                // 3. 禁用 Cesium 原生相机控制
+                if (earthPlanet && 'getCesiumExtension' in earthPlanet) {
+                  const cesiumExt = (earthPlanet as any).getCesiumExtension();
+                  if (cesiumExt) {
+                    cesiumExt.setNativeCameraEnabled(false);
+                    console.log('[SceneMode] Cesium native camera disabled');
+                  }
+                }
+                
+                // 4. 启用 Three.js OrbitControls，并将旋转中心对准地球
+                if (cameraControllerRef.current) {
+                  const controls = cameraControllerRef.current.getControls();
+                  controls.enabled = true;
+                  // 将 OrbitControls 的旋转中心设置为地球位置，
+                  // 避免相机以旧目标点（如太阳系中心）为轴旋转
+                  controls.target.copy(earthPos);
+                  // 更新 controls 以使用新的相机位置和目标点
+                  controls.update();
+                  console.log('[SceneMode] Three.js OrbitControls enabled, target set to Earth');
+                }
+                
+                // 5. 恢复 Three.js canvas 事件处理和层级
+                const renderer = sceneManagerRef.current.getRenderer();
+                renderer.domElement.style.pointerEvents = 'auto'; // Three.js 接收事件
+                renderer.domElement.style.zIndex = '1'; // Three.js 在上层
+                
+                console.log('[SceneMode] Canvas layers adjusted for THREE_DOMINANT');
+              }
+            }
+            
+            // 根据当前模式执行相应的相机同步
+            // 注意：不要在 Cesium 主导模式下同步相机
+            // Three.js 主导模式的相机同步在 updateEarthPlanet 中已经处理
+          }
         }
 
         // 动态调整视距裁剪

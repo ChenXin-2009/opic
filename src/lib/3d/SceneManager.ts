@@ -64,6 +64,7 @@ import { GALAXY_CONFIG, NEARBY_STARS_CONFIG, SCALE_VIEW_CONFIG } from '../config
 import { RenderError, TextureLoadError } from '../errors/base';
 import { logError, tryCatch } from '../utils/errors';
 import { type GridInfo, SolarSystemGrid } from './SolarSystemGrid';
+import { SceneModeManager, SceneMode } from './SceneModeManager';
 
 // 银河系背景图片路径（圆柱投影/equirectangular）
 const MILKY_WAY_TEXTURE_PATH = '/textures/planets/8k_stars_milky_way.webp';
@@ -156,6 +157,9 @@ export class SceneManager {
 
   // Cesium 地球集成（可选）
   private earthPlanet: any | null = null; // 使用 any 避免强制依赖 EarthPlanet
+  
+  // 场景模式管理器
+  private sceneModeManager: SceneModeManager;
 
   /**
    * Creates a new SceneManager instance.
@@ -187,6 +191,9 @@ export class SceneManager {
     this.universeGroup.rotation.x = 58.0 * degToRad;
     this.universeGroup.rotation.y = -21.0 * degToRad;
     this.universeGroup.rotation.z = 59.5 * degToRad;
+    
+    // 初始化场景模式管理器
+    this.sceneModeManager = new SceneModeManager();
 
     // 初始化渲染器
     this.renderer = new THREE.WebGLRenderer({
@@ -999,6 +1006,25 @@ export class SceneManager {
    */
   getEarthPlanet(): any | null {
     return this.earthPlanet;
+  }
+  
+  /**
+   * 获取场景模式管理器
+   * 
+   * @returns SceneModeManager 实例
+   */
+  getSceneModeManager(): SceneModeManager {
+    return this.sceneModeManager;
+  }
+  
+  /**
+   * 更新场景模式（根据距离地球的距离）
+   * 
+   * @param distanceToEarth 相机到地球的距离（AU）
+   * @returns 是否发生了模式切换
+   */
+  updateSceneMode(distanceToEarth: number): boolean {
+    return this.sceneModeManager.updateModeByDistance(distanceToEarth);
   }
   
   /**

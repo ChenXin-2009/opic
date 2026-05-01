@@ -37,6 +37,7 @@ export class EarthPlanet extends Planet {
   private originalMaterial: THREE.Material | null = null;
   private cesiumEnabled: boolean = false;
   private cesiumCanvasVisible: boolean = false;
+  private cesiumNativeCameraMode: boolean = false; // 是否使用 Cesium 原生相机模式
   
   constructor(config: EarthPlanetConfig) {
     super(config);
@@ -122,11 +123,26 @@ export class EarthPlanet extends Planet {
           this.cesiumCanvasVisible = true;
         }
 
-        // Three.js OrbitControls 驱动，同步后渲染
-        this.cesiumExtension.syncCamera(camera, earthPos);
+        // 只在 Three.js 主导模式下同步相机（Three.js → Cesium）
+        // 在 Cesium 原生相机模式下，不要同步，让 Cesium 完全控制相机
+        if (!this.cesiumNativeCameraMode) {
+          this.cesiumExtension.syncCamera(camera, earthPos);
+        }
+        
+        // 总是渲染 Cesium
         this.cesiumExtension.render();
       }
     }
+  }
+  
+  /**
+   * 设置是否使用 Cesium 原生相机模式
+   * 
+   * @param enabled - true: Cesium 控制相机，false: Three.js 控制相机
+   */
+  setCesiumNativeCameraMode(enabled: boolean): void {
+    this.cesiumNativeCameraMode = enabled;
+    console.log(`[EarthPlanet] Cesium native camera mode: ${enabled}`);
   }
   
   /**

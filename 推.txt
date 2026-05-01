@@ -8,9 +8,9 @@
 ==================
 git status
 git add .
-git commit -m "Release 9.1.0: 更新文档，修BUG"
+git commit -m "Release 9.2.0: 靠近地球后，进入以CESIUM为主导的模式"
 git checkout main
 git pull origin main
-git tag v9.1.0
+git tag v9.2.0
 git push origin main
-git push origin v9.1.0
+git push origin v9.2.0

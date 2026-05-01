@@ -687,9 +687,19 @@ export class CesiumAdapter {
    */
   setNativeCameraEnabled(enabled: boolean): void {
     if (!this.isAvailable || !this.viewer) return;
+    
+    console.log(`[CesiumAdapter] Setting native camera enabled: ${enabled}`);
+    
     this.viewer.scene.screenSpaceCameraController.enableInputs = enabled;
     this.cesiumCanvas.style.pointerEvents = enabled ? 'auto' : 'none';
     this.container.style.pointerEvents = enabled ? 'auto' : 'none';
+    
+    // 当启用原生相机时，确保 Cesium canvas 在上层以接收事件
+    if (enabled) {
+      this.container.style.zIndex = '2'; // 提升到 Three.js canvas 之上
+    } else {
+      this.container.style.zIndex = '0'; // 恢复到底层
+    }
   }
 
   /**
