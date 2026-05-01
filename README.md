@@ -1,7 +1,7 @@
 # OPIC — Open Integrated Cosmos
 
 <div align="center">
-  <img src="public/LOGO/logolw.svg" alt="OPIC Logo" width="300">
+  <img src="public/LOGO/logolwBG.svg" alt="OPIC Logo" width="300">
 </div>
 
 **A web-based multi-scale universe visualization and astronomical data integration system**
