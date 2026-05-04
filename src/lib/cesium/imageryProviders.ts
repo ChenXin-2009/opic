@@ -6,12 +6,28 @@
  * 职责：
  *   - 定义所有可用影像图源的元数据（名称、描述、预览图、分类）
  *   - 提供每个图源的工厂函数（create），按需异步创建 Cesium ImageryProvider 实例
- *   - 包含免费通用地图源（Bing、ESRI、OSM、CartoDB）和 NASA GIBS 实时卫星图层
+ *   - 包含免费通用地图源（ESRI、OSM、CartoDB）和 NASA GIBS 实时卫星图层
  *
  * 使用方式：
  *   - UI 组件读取 IMAGERY_SOURCES 渲染图源选择列表
  *   - 用户选择后调用对应条目的 create() 获取 ImageryProvider，
  *     再通过 CesiumEarthExtension.setImageryProvider() 切换图层
+ *
+ * 地图源说明：
+ *   - **ESRI World Imagery**（推荐，默认）：
+ *     * 完全免费，无需 API Key
+ *     * 每年 5000 万次瓦片请求限额（足够大多数应用使用）
+ *     * Cesium 自动显示 attribution（"Powered by Esri" + 数据来源）
+ *     * 高分辨率（19 级缩放）
+ *   
+ *   - **Bing Maps**：
+ *     * 通过 Cesium Ion 服务提供，需要有效的 Cesium Ion Access Token
+ *     * 免费计划：每月 5 万次瓦片请求
+ *     * 如果未配置 token 或 token 限额用尽，会加载失败
+ *   
+ *   - **其他免费地图源**：
+ *     * OpenStreetMap、CartoDB、ESRI Street Map 等均无需 API Key
+ *     * NASA GIBS 实时卫星图层免费，但有 1-2 天数据延迟
  */
 
 export type ImageryCategory = 'general' | 'nasa';
@@ -83,30 +99,43 @@ const GIBS_REST = 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best';
 export const IMAGERY_SOURCES: ImagerySourceDef[] = [
   // ── 通用地图源 ──────────────────────────────────────────────
   {
-    id: 'bing-default',
-    name: { zh: 'Bing Maps', en: 'Bing Maps' },
-    description: { zh: 'Cesium 内置卫星影像', en: 'Cesium built-in satellite imagery' },
-    category: 'general',
-    previewUrl: 'https://ecn.t3.tiles.virtualearth.net/tiles/a120.jpeg?g=1',
-    create: async () => {
-      const Cesium = await import('cesium');
-      // 使用 Cesium Ion 默认的 Bing Maps 图源（resource id=2）
-      return await Cesium.IonImageryProvider.fromAssetId(2);
-    },
-  },
-  {
     id: 'esri-world-imagery',
     name: { zh: 'ESRI 卫星影像', en: 'ESRI World Imagery' },
-    description: { zh: '高分辨率卫星图像', en: 'High-resolution satellite imagery' },
+    description: { zh: '高分辨率卫星图像（免费，推荐）', en: 'High-resolution satellite imagery (Free, Recommended)' },
     category: 'general',
     previewUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/2/1/2',
     create: async () => {
       const Cesium = await import('cesium');
-      // ESRI World Imagery：ArcGIS Online 提供的高分辨率卫星影像，最高支持 19 级缩放
+      // ESRI World Imagery：ArcGIS Online 提供的高分辨率卫星影像
+      // - 完全免费，无需 API Key
+      // - 每年 5000 万次瓦片请求限额（足够大多数应用使用）
+      // - 最高支持 19 级缩放
+      // - Cesium 自动显示 attribution（"Powered by Esri" + 数据来源）
       return new Cesium.UrlTemplateImageryProvider({
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         maximumLevel: 19,
+        credit: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community',
       });
+    },
+  },
+  {
+    id: 'bing-default',
+    name: { zh: 'Bing Maps', en: 'Bing Maps' },
+    description: { zh: 'Bing 卫星影像（需要API密钥）', en: 'Bing satellite imagery (requires API key)' },
+    category: 'general',
+    previewUrl: 'https://ecn.t3.tiles.virtualearth.net/tiles/a120.jpeg?g=1',
+    create: async () => {
+      const Cesium = await import('cesium');
+      // 注意：Bing Maps 通过 Cesium Ion 提供，需要有效的 Cesium Ion token
+      // 如果没有配置 token 或 token 限额用尽，会导致加载失败
+      // 建议使用 ESRI 等其他免费地图源作为替代
+      try {
+        return await Cesium.IonImageryProvider.fromAssetId(2);
+      } catch (error) {
+        console.warn('[Bing Maps] Failed to load via Cesium Ion:', error);
+        // 如果 Ion 加载失败，返回 null（UI 会显示错误）
+        return null;
+      }
     },
   },
   {

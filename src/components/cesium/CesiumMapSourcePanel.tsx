@@ -94,7 +94,7 @@ function PreviewImage({ src, alt }: { src: string; alt: string }) {
  * @param props.visible - 是否显示面板，默认为 true
  */
 export default function CesiumMapSourcePanel({ earthPlanet, visible = true }: CesiumMapSourcePanelProps) {
-  const [activeId, setActiveId] = useState<string>('bing-default');
+  const [activeId, setActiveId] = useState<string>('esri-world-imagery');
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);

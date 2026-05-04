@@ -32,6 +32,7 @@
 |------|------|
 | [INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md) | 集成指南 |
 | [UNIVERSE_VISUALIZATION.md](./UNIVERSE_VISUALIZATION.md) | 宇宙可视化架构 |
+| [CESIUM_MAP_SOURCES.md](./CESIUM_MAP_SOURCES.md) | Cesium 地图源配置指南 |
 
 ## 功能实现
 

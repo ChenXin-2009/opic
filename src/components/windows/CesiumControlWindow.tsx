@@ -37,7 +37,7 @@ function PreviewImage({ src, alt }: { src: string; alt: string }) {
 export function CesiumControlWindow({
   lang = 'zh',
 }: CesiumControlWindowProps) {
-  const [activeId, setActiveId] = useState<string>('bing-default');
+  const [activeId, setActiveId] = useState<string>('esri-world-imagery');
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

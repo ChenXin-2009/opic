@@ -43,6 +43,7 @@ import { dateToJulianDay } from '@/lib/astronomy/time';
 import { ORBITAL_ELEMENTS } from '@/lib/astronomy/orbit';
 import { planetNames } from '@/lib/astronomy/names';
 import { CELESTIAL_BODIES } from '@/lib/types/celestialTypes';
+import { IMAGERY_SOURCES } from '@/lib/cesium/imageryProviders';
 import * as THREE from 'three';
 import { Raycaster } from 'three';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
@@ -560,6 +561,20 @@ export default function SolarSystemCanvas3D({ onCameraDistanceChange, cesiumEnab
           // 通知父组件 earthPlanet 已准备好
           if (onEarthPlanetReady) {
             onEarthPlanetReady(planet);
+          }
+          
+          // 异步加载并设置默认的 ESRI 卫星影像
+          const esriSource = IMAGERY_SOURCES.find(s => s.id === 'esri-world-imagery');
+          if (esriSource) {
+            esriSource.create().then((provider) => {
+              const cesiumExt = (planet as EarthPlanet).getCesiumExtension();
+              if (cesiumExt && provider) {
+                cesiumExt.setImageryProvider(provider);
+                console.log('[SolarSystemCanvas3D] Default ESRI imagery provider loaded');
+              }
+            }).catch((error) => {
+              console.error('[SolarSystemCanvas3D] Failed to load default imagery provider:', error);
+            });
           }
           
           // 设置初始 Cesium 状态(默认禁用)
